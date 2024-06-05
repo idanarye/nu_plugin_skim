@@ -1,5 +1,8 @@
-use std::borrow::Borrow;
+mod nu_item;
+mod command_context;
 
+use command_context::CommandContext;
+use nu_item::NuItem;
 use nu_plugin::{serve_plugin, MsgPackSerializer, Plugin, PluginCommand};
 use nu_plugin::{EngineInterface, EvaluatedCall};
 use nu_protocol::{Category, Example, LabeledError, PipelineData, Signature, Type, Value};
@@ -28,24 +31,14 @@ impl PluginCommand for Sk {
     fn signature(&self) -> Signature {
         Signature::build(self.name())
             .input_output_type(
-                Type::List(Type::String.into()),
-                Type::List(Type::String.into()),
+                Type::List(Type::Any.into()),
+                Type::List(Type::Any.into()),
             )
             .category(Category::Experimental)
     }
 
     fn usage(&self) -> &str {
-        "(FIXME) help text for sk"
-    }
-
-    fn examples(&self) -> Vec<Example> {
-        vec![Example {
-            example: "[ Ellie ] | sk",
-            description: "Say hello to Ellie",
-            result: Some(Value::test_list(vec![Value::test_string(
-                "Hello, Ellie. How are you today?",
-            )])),
-        }]
+        "Select a value using skim (a fuzzy finder written in Rust)"
     }
 
     fn run(
@@ -55,7 +48,7 @@ impl PluginCommand for Sk {
         call: &EvaluatedCall,
         input: PipelineData,
     ) -> Result<PipelineData, LabeledError> {
-        let span = call.head;
+        let _span = call.head;
 
         let pipeline_metadata = input.metadata();
 
@@ -63,33 +56,26 @@ impl PluginCommand for Sk {
             .build()
             .map_err(|err| LabeledError::new(err.to_string()))?;
 
+        let command_context = Arc::new(CommandContext {
+            engine: engine.clone(),
+        });
+
         let (sender, receiver) = unbounded::<Arc<dyn SkimItem>>();
 
         for entry in input.into_iter() {
-            sender.send(Arc::new(entry.as_str()?.to_owned())).unwrap();
+            sender.send(Arc::new(NuItem {
+                value: entry,
+                context: command_context.clone(),
+            })).unwrap();
         }
 
         let foreground = engine.enter_foreground()?;
         let selected = Skim::run_with(&skim_options, Some(receiver)).unwrap();
         let _ = foreground;
-        let result = selected.selected_items[0].output();
+        let result = (*selected.selected_items[0]).as_any().downcast_ref::<NuItem>().unwrap().value.clone();
 
-        Ok(PipelineData::Value(
-            Value::string(result, span),
-            pipeline_metadata,
-        ))
+        Ok(PipelineData::Value(result, pipeline_metadata))
     }
-}
-
-#[test]
-fn test_examples() -> Result<(), nu_protocol::ShellError> {
-    use nu_plugin_test_support::PluginTest;
-
-    // This will automatically run the examples specified in your command and compare their actual
-    // output against what was specified in the example. You can remove this test if the examples
-    // can't be tested this way, but we recommend including it if possible.
-
-    PluginTest::new("skim", SkimPlugin.into())?.test_command_examples(&Sk)
 }
 
 fn main() {
