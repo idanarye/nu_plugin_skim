@@ -1,5 +1,5 @@
 use nu_plugin::EngineInterface;
-use nu_protocol::{ast::CellPath, LabeledError};
+use nu_protocol::{engine::Closure, LabeledError, Spanned};
 
 pub struct CommandContext {
     pub engine: EngineInterface,
@@ -19,5 +19,5 @@ impl CommandContext {
 
 pub enum FormatFlag {
     None,
-    Path(CellPath),
+    Closure(Spanned<Closure>),
 }
