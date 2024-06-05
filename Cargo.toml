@@ -1,0 +1,22 @@
+[package]
+name = "nu_plugin_skim"
+version = "0.1.0"
+authors = ["Idan Arye <IdanArye@gmail.com>"]
+edition = "2021"
+description = "a nushell plugin called skim"
+repository = "https://github.com/idanarye/nu_plugin_skim"
+license = "MIT"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+# for local development, you can use a path dependency
+# nu-plugin = { path = "../nushell/crates/nu-plugin" }
+# nu-protocol = { path = "../nushell/crates/nu-protocol", features = ["plugin"] }
+nu-plugin = "0.94"
+nu-protocol = { version = "0.94", features = ["plugin"] }
+skim = { version = "0.10", no_default_features = true }
+
+[dev-dependencies]
+# nu-plugin-test-support = { path = "../nushell/crates/nu-plugin-test-support" }
+nu-plugin-test-support = { version = "0.94" }
