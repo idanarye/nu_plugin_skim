@@ -1,23 +1,18 @@
 mod command_context;
 mod nu_item;
 
-use command_context::{CommandContext, FormatFlag};
+use command_context::CommandContext;
 use nu_item::NuItem;
 use nu_plugin::{serve_plugin, MsgPackSerializer, Plugin, PluginCommand};
 use nu_plugin::{EngineInterface, EvaluatedCall};
-use nu_protocol::{
-    Category, IntoSpanned, LabeledError, PipelineData, Signature, SyntaxShape, Type,
-};
+use nu_protocol::{Category, LabeledError, PipelineData, Signature, SyntaxShape, Type};
 use skim::prelude::*;
 
 pub struct SkimPlugin;
 
 impl Plugin for SkimPlugin {
     fn commands(&self) -> Vec<Box<dyn PluginCommand<Plugin = Self>>> {
-        vec![
-            // Commands should be added here
-            Box::new(Sk),
-        ]
+        vec![Box::new(Sk)]
     }
 }
 
@@ -40,6 +35,12 @@ impl PluginCommand for Sk {
                 "modify the string to display",
                 None,
             )
+            .named(
+                "preview",
+                SyntaxShape::Closure(Some(vec![])),
+                "generate a preview",
+                None,
+            )
     }
 
     fn usage(&self) -> &str {
@@ -60,17 +61,12 @@ impl PluginCommand for Sk {
         let mut skim_options = SkimOptionsBuilder::default();
         let mut command_context = CommandContext::new(engine)?;
         if let Some(format) = call.get_flag_value("format") {
-            command_context.format = match format {
-                nu_protocol::Value::Closure { val, internal_span } => {
-                    FormatFlag::Closure((*val).into_spanned(internal_span))
-                }
-                // nu_protocol::Value::CellPath { val, internal_span } => {
-                // }
-                format => {
-                    return Err(LabeledError::new("Invalid format")
-                        .with_label("not path nor closure", format.span()));
-                }
-            };
+            command_context.format = format.try_into()?;
+        }
+
+        if let Some(preview) = call.get_flag_value("preview") {
+            command_context.preview = preview.try_into()?;
+            skim_options.preview(Some(""));
         }
 
         let skim_options = skim_options

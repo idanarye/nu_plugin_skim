@@ -1,7 +1,7 @@
 use nu_protocol::Value;
 use skim::prelude::*;
 
-use crate::command_context::{CommandContext, FormatFlag};
+use crate::command_context::CommandContext;
 
 pub struct NuItem {
     pub context: Arc<CommandContext>,
@@ -10,27 +10,16 @@ pub struct NuItem {
 
 impl SkimItem for NuItem {
     fn text(&self) -> Cow<str> {
-        let storage: Value;
-        let value = match &self.context.format {
-            FormatFlag::None => &self.value,
-            FormatFlag::Closure(closure) => {
-                storage = match self.context.engine.eval_closure(
-                    closure,
-                    vec![],
-                    Some(self.value.clone()),
-                ) {
-                    Ok(ok) => ok,
-                    Err(err) => return err.to_string().into(),
-                };
-                &storage
-            }
-        };
-        value
+        self.context
+            .format
+            .map(self)
             .to_expanded_string(", ", &self.context.nu_config)
             .into()
     }
 
-    //fn preview(&self, _context: PreviewContext) -> ItemPreview {
-    //ItemPreview::Global
-    //}
+    fn preview(&self, _context: PreviewContext) -> ItemPreview {
+        ItemPreview::AnsiText(
+            self.context.preview.map(self).to_expanded_string(", ", &self.context.nu_config)
+        )
+    }
 }
