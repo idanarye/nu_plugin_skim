@@ -5,7 +5,7 @@ use command_context::CommandContext;
 use nu_item::NuItem;
 use nu_plugin::{serve_plugin, MsgPackSerializer, Plugin, PluginCommand};
 use nu_plugin::{EngineInterface, EvaluatedCall};
-use nu_protocol::{Category, LabeledError, PipelineData, Signature, SyntaxShape, Type};
+use nu_protocol::{Category, IntoSpanned, LabeledError, PipelineData, Signature, SyntaxShape, Type};
 use skim::prelude::*;
 
 pub struct SkimPlugin;
