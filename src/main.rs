@@ -41,6 +41,11 @@ impl PluginCommand for Sk {
                 "generate a preview",
                 None,
             )
+            .switch(
+                "sync",
+                "Wait for all the options to be available before choosing",
+                None,
+            )
     }
 
     fn usage(&self) -> &str {
@@ -69,6 +74,10 @@ impl PluginCommand for Sk {
             skim_options.preview(Some(""));
         }
 
+        if call.has_flag("sync")? {
+            skim_options.sync(true);
+        }
+
         let skim_options = skim_options
             .build()
             .map_err(|err| LabeledError::new(err.to_string()))?;
@@ -77,18 +86,24 @@ impl PluginCommand for Sk {
 
         let (sender, receiver) = unbounded::<Arc<dyn SkimItem>>();
 
-        for entry in input.into_iter() {
-            sender
-                .send(Arc::new(NuItem {
-                    value: entry,
-                    context: command_context.clone(),
-                }))
-                .unwrap();
-        }
+        std::thread::spawn(move || {
+            for entry in input.into_iter() {
+                if sender
+                    .send(Arc::new(NuItem {
+                        value: entry,
+                        context: command_context.clone(),
+                    }))
+                    .is_err()
+                {
+                    // Assuming the receiver was closed because the user picked an item
+                    return;
+                }
+            }
+        });
 
-        let foreground = engine.enter_foreground()?;
+        let _foreground = engine.enter_foreground()?;
         let selected = Skim::run_with(&skim_options, Some(receiver)).unwrap();
-        let _ = foreground;
+
         let result = (*selected.selected_items[0])
             .as_any()
             .downcast_ref::<NuItem>()
