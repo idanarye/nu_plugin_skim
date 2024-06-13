@@ -1,4 +1,9 @@
-use nu_protocol::Value;
+use nu_color_config::{StyleComputer, StyleMapping};
+use nu_protocol::{
+    engine::{EngineState, Stack},
+    Span, Value,
+};
+use nu_table::{ExpandedTable, TableOpts};
 use skim::prelude::*;
 
 use crate::command_context::CommandContext;
@@ -17,9 +22,28 @@ impl SkimItem for NuItem {
             .into()
     }
 
-    fn preview(&self, _context: PreviewContext) -> ItemPreview {
-        ItemPreview::AnsiText(
-            self.context.preview.map(self).to_expanded_string(", ", &self.context.nu_config)
-        )
+    fn preview(&self, context: PreviewContext) -> ItemPreview {
+        let preview_result = self.context.preview.map(self);
+        let fake_engine_state = EngineState::default();
+        let fake_stack = Stack::default();
+        let style_computer =
+            StyleComputer::new(&fake_engine_state, &fake_stack, StyleMapping::default());
+        let table_opts = TableOpts::new(
+            &self.context.nu_config,
+            &style_computer,
+            None,
+            Span::new(0, 0), // TODO: figure the correct span?
+            context.width,
+            (
+                self.context.nu_config.table_indent.left,
+                self.context.nu_config.table_indent.right,
+            ),
+            self.context.nu_config.table_mode,
+            0,
+            true,
+        );
+        let (string_result, _) =
+            ExpandedTable::new(None, false, "".to_owned()).build_value(&preview_result, table_opts);
+        ItemPreview::AnsiText(string_result)
     }
 }

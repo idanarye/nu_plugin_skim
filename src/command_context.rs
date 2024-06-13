@@ -1,7 +1,9 @@
 use std::borrow::Cow;
 
 use nu_plugin::EngineInterface;
-use nu_protocol::{engine::Closure, IntoSpanned, LabeledError, PipelineData, ShellError, Spanned, Value};
+use nu_protocol::{
+    engine::Closure, IntoSpanned, LabeledError, PipelineData, ShellError, Spanned, Value,
+};
 
 use crate::nu_item::NuItem;
 
@@ -52,17 +54,13 @@ impl MapperFlag {
         match self {
             MapperFlag::None => Cow::Borrowed(&item.value),
             MapperFlag::Closure(closure) => Cow::Owned(
-                match item
-                    .context
-                    .engine
-                    .eval_closure_with_stream(
-                        closure,
-                        vec![],
-                        PipelineData::Value(item.value.clone(), None),
-                        true,
-                        true,
-                    )
-                {
+                match item.context.engine.eval_closure_with_stream(
+                    closure,
+                    vec![],
+                    PipelineData::Value(item.value.clone(), None),
+                    true,
+                    true,
+                ) {
                     Ok(PipelineData::Empty) => Value::nothing(closure.span),
                     Ok(PipelineData::Value(value, _)) => value,
                     Ok(PipelineData::ListStream(list_stream, _)) => list_stream.into_value(),
