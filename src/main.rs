@@ -1,8 +1,6 @@
-mod bridge_cli_arguments;
 mod command_context;
 mod nu_item;
 
-use bridge_cli_arguments::{do_bridging, BridgeNuSignature, BridgeSkimSide};
 use command_context::CommandContext;
 use nu_item::NuItem;
 use nu_plugin::{serve_plugin, MsgPackSerializer, Plugin, PluginCommand};
@@ -28,7 +26,7 @@ impl PluginCommand for Sk {
     }
 
     fn signature(&self) -> Signature {
-        let signature = Signature::build(self.name())
+        Signature::build(self.name())
             .input_output_type(Type::List(Type::Any.into()), Type::List(Type::Any.into()))
             .category(Category::Experimental)
             .named(
@@ -42,10 +40,13 @@ impl PluginCommand for Sk {
                 SyntaxShape::Closure(Some(vec![])),
                 "generate a preview",
                 None,
-            );
-        do_bridging(BridgeNuSignature(signature))
-            .expect("cannot fail when defining the signature")
-            .0
+            )
+            .switch("multi", "Select multiple values", Some('m'))
+            .switch(
+                "sync",
+                "Wait for all the options to be available before choosing",
+                None,
+            )
     }
 
     fn usage(&self) -> &str {
@@ -74,14 +75,14 @@ impl PluginCommand for Sk {
             skim_options.preview(Some(""));
         }
 
-        let mut skim_options = skim_options
+        let multi = call.has_flag("multi")?;
+        skim_options.multi(multi);
+
+        skim_options.sync(call.has_flag("sync")?);
+
+        let skim_options = skim_options
             .build()
             .map_err(|err| LabeledError::new(err.to_string()))?;
-
-        do_bridging(BridgeSkimSide {
-            call,
-            skim_options: &mut skim_options,
-        })?;
 
         let command_context = Arc::new(command_context);
 
@@ -113,7 +114,7 @@ impl PluginCommand for Sk {
                 .value
                 .clone()
         });
-        if skim_options.multi {
+        if multi {
             Ok(PipelineData::ListStream(
                 ListStream::new(result, span, None),
                 pipeline_metadata,
