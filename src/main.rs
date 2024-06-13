@@ -5,7 +5,7 @@ use command_context::CommandContext;
 use nu_item::NuItem;
 use nu_plugin::{serve_plugin, MsgPackSerializer, Plugin, PluginCommand};
 use nu_plugin::{EngineInterface, EvaluatedCall};
-use nu_protocol::{Category, LabeledError, PipelineData, Signature, SyntaxShape, Type};
+use nu_protocol::{Category, LabeledError, ListStream, PipelineData, Signature, SyntaxShape, Type};
 use skim::prelude::*;
 
 pub struct SkimPlugin;
@@ -41,6 +41,7 @@ impl PluginCommand for Sk {
                 "generate a preview",
                 None,
             )
+            .switch("multi", "Select multiple values", Some('m'))
             .switch(
                 "sync",
                 "Wait for all the options to be available before choosing",
@@ -59,7 +60,7 @@ impl PluginCommand for Sk {
         call: &EvaluatedCall,
         input: PipelineData,
     ) -> Result<PipelineData, LabeledError> {
-        let _span = call.head;
+        let span = call.head;
 
         let pipeline_metadata = input.metadata();
 
@@ -74,9 +75,10 @@ impl PluginCommand for Sk {
             skim_options.preview(Some(""));
         }
 
-        if call.has_flag("sync")? {
-            skim_options.sync(true);
-        }
+        let multi = call.has_flag("multi")?;
+        skim_options.multi(multi);
+
+        skim_options.sync(call.has_flag("sync")?);
 
         let skim_options = skim_options
             .build()
@@ -104,14 +106,26 @@ impl PluginCommand for Sk {
         let _foreground = engine.enter_foreground()?;
         let selected = Skim::run_with(&skim_options, Some(receiver)).unwrap();
 
-        let result = (*selected.selected_items[0])
-            .as_any()
-            .downcast_ref::<NuItem>()
-            .unwrap()
-            .value
-            .clone();
-
-        Ok(PipelineData::Value(result, pipeline_metadata))
+        let mut result = selected.selected_items.into_iter().map(|item| {
+            (*item)
+                .as_any()
+                .downcast_ref::<NuItem>()
+                .unwrap()
+                .value
+                .clone()
+        });
+        if multi {
+            Ok(PipelineData::ListStream(
+                ListStream::new(result, span, None),
+                pipeline_metadata,
+            ))
+        } else {
+            Ok(if let Some(result) = result.next() {
+                PipelineData::Value(result, pipeline_metadata)
+            } else {
+                PipelineData::empty()
+            })
+        }
     }
 }
 
