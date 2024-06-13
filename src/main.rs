@@ -5,7 +5,9 @@ use command_context::CommandContext;
 use nu_item::NuItem;
 use nu_plugin::{serve_plugin, MsgPackSerializer, Plugin, PluginCommand};
 use nu_plugin::{EngineInterface, EvaluatedCall};
-use nu_protocol::{Category, LabeledError, ListStream, PipelineData, Signature, SyntaxShape, Type};
+use nu_protocol::{
+    Category, LabeledError, ListStream, PipelineData, Signature, SyntaxShape, Type, Value,
+};
 use skim::prelude::*;
 
 pub struct SkimPlugin;
@@ -88,20 +90,49 @@ impl PluginCommand for Sk {
 
         let (sender, receiver) = unbounded::<Arc<dyn SkimItem>>();
 
-        std::thread::spawn(move || {
-            for entry in input.into_iter() {
-                if sender
-                    .send(Arc::new(NuItem {
-                        value: entry,
-                        context: command_context.clone(),
-                    }))
-                    .is_err()
-                {
-                    // Assuming the receiver was closed because the user picked an item
-                    return;
-                }
+        match input {
+            PipelineData::Empty => {
+                return Ok(PipelineData::empty());
             }
-        });
+            PipelineData::Value(_, _) | PipelineData::ListStream(_, _) => {
+                std::thread::spawn(move || {
+                    for entry in input.into_iter() {
+                        if sender
+                            .send(Arc::new(NuItem {
+                                value: entry,
+                                context: command_context.clone(),
+                            }))
+                            .is_err()
+                        {
+                            // Assuming the receiver was closed because the user picked an item
+                            return;
+                        }
+                    }
+                });
+            }
+            PipelineData::ByteStream(byte_stream, _) => {
+                let Some(lines) = byte_stream.lines() else {
+                    return Ok(PipelineData::empty());
+                };
+                std::thread::spawn(move || {
+                    for line in lines {
+                        if sender
+                            .send(Arc::new(NuItem {
+                                value: match line {
+                                    Ok(text) => Value::string(text, span),
+                                    Err(err) => Value::error(err, span),
+                                },
+                                context: command_context.clone(),
+                            }))
+                            .is_err()
+                        {
+                            // Assuming the receiver was closed because the user picked an item
+                            return;
+                        }
+                    }
+                });
+            }
+        }
 
         let _foreground = engine.enter_foreground()?;
         let selected = Skim::run_with(&skim_options, Some(receiver)).unwrap();
