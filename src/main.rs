@@ -1,6 +1,8 @@
+mod cli_arguments;
 mod command_context;
 mod nu_item;
 
+use cli_arguments::CliArguments;
 use command_context::CommandContext;
 use nu_item::NuItem;
 use nu_plugin::{serve_plugin, MsgPackSerializer, Plugin, PluginCommand};
@@ -28,7 +30,7 @@ impl PluginCommand for Sk {
     }
 
     fn signature(&self) -> Signature {
-        Signature::build(self.name())
+        let signature = Signature::build(self.name())
             .input_output_type(Type::List(Type::Any.into()), Type::List(Type::Any.into()))
             .category(Category::Experimental)
             .named(
@@ -42,13 +44,8 @@ impl PluginCommand for Sk {
                 SyntaxShape::Closure(Some(vec![])),
                 "generate a preview",
                 None,
-            )
-            .switch("multi", "Select multiple values", Some('m'))
-            .switch(
-                "sync",
-                "Wait for all the options to be available before choosing",
-                None,
-            )
+            );
+        CliArguments::add_to_signature(signature)
     }
 
     fn usage(&self) -> &str {
@@ -66,7 +63,9 @@ impl PluginCommand for Sk {
 
         let pipeline_metadata = input.metadata();
 
-        let mut skim_options = SkimOptionsBuilder::default();
+        let cli_arguments = CliArguments::try_from(call)?;
+        let mut skim_options = cli_arguments.to_skim_options();
+
         let mut command_context = CommandContext::new(engine)?;
         if let Some(format) = call.get_flag_value("format") {
             command_context.format = format.try_into()?;
@@ -74,17 +73,8 @@ impl PluginCommand for Sk {
 
         if let Some(preview) = call.get_flag_value("preview") {
             command_context.preview = preview.try_into()?;
-            skim_options.preview(Some(""));
+            skim_options.preview = Some("");
         }
-
-        let multi = call.has_flag("multi")?;
-        skim_options.multi(multi);
-
-        skim_options.sync(call.has_flag("sync")?);
-
-        let skim_options = skim_options
-            .build()
-            .map_err(|err| LabeledError::new(err.to_string()))?;
 
         let command_context = Arc::new(command_context);
 
@@ -145,7 +135,7 @@ impl PluginCommand for Sk {
                 .value
                 .clone()
         });
-        if multi {
+        if skim_options.multi {
             Ok(PipelineData::ListStream(
                 ListStream::new(result, span, None),
                 pipeline_metadata,
