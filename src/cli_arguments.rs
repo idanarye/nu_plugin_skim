@@ -1,11 +1,11 @@
 use nu_plugin::EvaluatedCall;
-use nu_protocol::{LabeledError, Signature};
+use nu_protocol::{LabeledError, Signature, SyntaxShape};
 use skim::SkimOptions;
 
 pub struct CliArguments {
     //bind: Vec<String>,
     multi: bool,
-    //prompt: Option<String>,
+    prompt: Option<String>,
     //cmd_prompt: Option<String>,
     //expect: Option<String>,
     //tac: bool,
@@ -57,6 +57,7 @@ impl TryFrom<&EvaluatedCall> for CliArguments {
     fn try_from(call: &EvaluatedCall) -> Result<Self, Self::Error> {
         Ok(Self {
             multi: call.has_flag("multi")?,
+            prompt: call.get_flag("prompt")?,
             sync: call.has_flag("sync")?,
         })
     }
@@ -66,6 +67,7 @@ impl CliArguments {
     pub fn add_to_signature(signature: Signature) -> Signature {
         signature
             .switch("multi", "Select multiple values", Some('m'))
+            .named("prompt", SyntaxShape::String, "Input prompt", None)
             .switch(
                 "sync",
                 "Wait for all the options to be available before choosing",
@@ -74,9 +76,14 @@ impl CliArguments {
     }
 
     pub fn to_skim_options(&self) -> SkimOptions {
-        let Self { multi, sync } = self;
+        let Self {
+            multi,
+            prompt,
+            sync,
+        } = self;
         SkimOptions {
             multi: *multi,
+            prompt: prompt.as_deref(),
             sync: *sync,
             ..Default::default()
         }
