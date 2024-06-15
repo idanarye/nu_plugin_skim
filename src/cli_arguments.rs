@@ -24,8 +24,8 @@ pub struct CliArguments {
     //no_height: bool,
     no_clear: bool,
     //no_clear_start: bool,
-    //min_height: Option<String>,
-    //height: Option<String>,
+    min_height: Option<String>,
+    height: Option<String>,
     //preview: Option<String>,
     //preview_window: Option<String>,
     //reverse: bool,
@@ -96,6 +96,10 @@ impl TryFrom<&EvaluatedCall> for CliArguments {
             color: call.get_flag("color")?,
             margin: call.get_flag("margin")?,
             no_clear: call.has_flag("no-clear")?,
+            min_height: call
+                .get_flag::<i64>("min-height")?
+                .map(|num| num.to_string()),
+            height: call.get_flag("height")?,
             sync: call.has_flag("sync")?,
         })
     }
@@ -143,6 +147,18 @@ impl CliArguments {
                 "Do not clear finder interface on exit",
                  None,
             )
+            .named(
+                "height",
+                SyntaxShape::String,
+                "Display sk window below the cursor with the given height instead of using the full screen",
+                None,
+            )
+            .named(
+                "min-height",
+                SyntaxShape::Number,
+                "Minimum height when --height is given in percent. Ignored when --height is not specified",
+                None,
+            )
             .switch(
                 "sync",
                 "Wait for all the options to be available before choosing",
@@ -164,6 +180,8 @@ impl CliArguments {
             color,
             margin,
             no_clear,
+            min_height,
+            height,
             sync,
         } = self;
 
@@ -180,6 +198,8 @@ impl CliArguments {
             color: color.as_deref(),
             margin: margin.as_deref().or(Some("0,0,0,0")),
             no_clear: *no_clear,
+            min_height: min_height.as_deref().or(Some("10")),
+            height: height.as_deref(),
             sync: *sync,
             ..Default::default()
         }
