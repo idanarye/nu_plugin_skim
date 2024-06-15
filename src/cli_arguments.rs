@@ -28,14 +28,14 @@ pub struct CliArguments {
     height: Option<String>,
     //preview: Option<String>,
     preview_window: Option<String>,
-    //reverse: bool,
+    reverse: bool, // note that this does not (just) get paseed to CliArguments as is - it's there to modify --layout
     tabstop: Option<String>,
     no_hscroll: bool,
     no_mouse: bool,
     inline_info: bool,
     //header: Option<String>,
     //header_lines: usize,
-    //layout: String,
+    layout: Option<String>,
     //algorithm: FuzzyAlgorithm,
     //case: CaseMatching,
     //engine_factory: Option<Rc<dyn MatchEngineFactory>>,
@@ -101,11 +101,13 @@ impl TryFrom<&EvaluatedCall> for CliArguments {
                 .map(|num| num.to_string()),
             height: call.get_flag("height")?,
             preview_window: call.get_flag("preview-window")?,
+            reverse: call.has_flag("reverse")?,
             tabstop: call.get_flag::<i64>("tabstop")?.map(|num| num.to_string()),
             sync: call.has_flag("sync")?,
             no_hscroll: call.has_flag("no-hscroll")?,
             no_mouse: call.has_flag("no-mouse")?,
             inline_info: call.has_flag("inline-info")?,
+            layout: call.get_flag("layout")?,
         })
     }
 }
@@ -170,6 +172,11 @@ impl CliArguments {
                 "Determines the layout of the preview window",
                 None,
             )
+            .switch(
+                "reverse",
+                "A synonym for --layout=reverse",
+                None,
+            )
             .named(
                 "tabstop",
                 SyntaxShape::Number,
@@ -189,6 +196,12 @@ impl CliArguments {
             .switch(
                 "inline-info",
                 "Display the finder info after the prompt with the default prefix ' < '",
+                None,
+            )
+            .named(
+                "layout",
+                SyntaxShape::String,
+                "Choose the layout",
                 None,
             )
             .switch(
@@ -215,10 +228,12 @@ impl CliArguments {
             min_height,
             height,
             preview_window,
+            reverse,
             tabstop,
             no_hscroll,
             no_mouse,
             inline_info,
+            layout,
             sync,
         } = self;
 
@@ -238,10 +253,16 @@ impl CliArguments {
             min_height: min_height.as_deref().or(Some("10")),
             height: height.as_deref().or(Some("100%")),
             preview_window: preview_window.as_deref().or(Some("right:50%")),
+            reverse: *reverse,
             tabstop: tabstop.as_deref(),
             no_hscroll: *no_hscroll,
             no_mouse: *no_mouse,
             inline_info: *inline_info,
+            layout: if *reverse {
+                "reverse"
+            } else {
+                layout.as_deref().unwrap_or("default")
+            },
             sync: *sync,
             ..Default::default()
         }
