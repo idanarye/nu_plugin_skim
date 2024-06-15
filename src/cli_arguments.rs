@@ -8,8 +8,8 @@ pub struct CliArguments {
     prompt: Option<String>,
     //cmd_prompt: Option<String>,
     expect: Option<String>,
-    //tac: bool,
-    //nosort: bool,
+    tac: bool,
+    nosort: bool,
     //tiebreak: Option<String>,
     //exact: bool,
     //cmd: Option<String>,
@@ -82,6 +82,8 @@ impl TryFrom<&EvaluatedCall> for CliArguments {
                     Ok::<_, LabeledError>(result)
                 })
                 .transpose()?,
+            tac: call.has_flag("tac")?,
+            nosort: call.has_flag("no-sort")?,
             sync: call.has_flag("sync")?,
         })
     }
@@ -96,14 +98,16 @@ impl CliArguments {
                 "Custom key bindings. A record where the keys arae keymaps and the values are actions",
                 None,
             )
+            .switch("multi", "Select multiple values", Some('m'))
+            .named("prompt", SyntaxShape::String, "Input prompt", None)
             .named(
                 "expect",
                 SyntaxShape::List(Box::new(SyntaxShape::String)),
                 "List of keys that can be used to complete sk in addition to the default enter key",
                 None,
             )
-            .switch("multi", "Select multiple values", Some('m'))
-            .named("prompt", SyntaxShape::String, "Input prompt", None)
+            .switch("tac", "Reverse  the  order  of  the search result (normally used together with --no-sort)", None)
+            .switch("no-sort", "Do not sort the search result (normally used together with --tac)", None)
             .switch(
                 "sync",
                 "Wait for all the options to be available before choosing",
@@ -117,6 +121,8 @@ impl CliArguments {
             multi,
             prompt,
             expect,
+            tac,
+            nosort,
             sync,
         } = self;
 
@@ -125,6 +131,8 @@ impl CliArguments {
             multi: *multi,
             prompt: prompt.as_deref(),
             expect: expect.clone(),
+            tac: *tac,
+            nosort: *nosort,
             sync: *sync,
             ..Default::default()
         }
