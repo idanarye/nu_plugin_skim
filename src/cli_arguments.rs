@@ -1,9 +1,9 @@
 use nu_plugin::EvaluatedCall;
-use nu_protocol::{LabeledError, Signature, SyntaxShape};
+use nu_protocol::{LabeledError, Record, Signature, SyntaxShape};
 use skim::SkimOptions;
 
 pub struct CliArguments {
-    //bind: Vec<String>,
+    bind: Vec<String>,
     multi: bool,
     prompt: Option<String>,
     //cmd_prompt: Option<String>,
@@ -56,6 +56,16 @@ impl TryFrom<&EvaluatedCall> for CliArguments {
 
     fn try_from(call: &EvaluatedCall) -> Result<Self, Self::Error> {
         Ok(Self {
+            bind: if let Some(bind) = call.get_flag::<Record>("bind")? {
+                bind.iter()
+                    .map(|(key, value)| {
+                        let value = value.coerce_string()?;
+                        Ok(format!("{key}:{value}"))
+                    })
+                    .collect::<Result<Vec<String>, LabeledError>>()?
+            } else {
+                Vec::default()
+            },
             multi: call.has_flag("multi")?,
             prompt: call.get_flag("prompt")?,
             sync: call.has_flag("sync")?,
@@ -66,6 +76,12 @@ impl TryFrom<&EvaluatedCall> for CliArguments {
 impl CliArguments {
     pub fn add_to_signature(signature: Signature) -> Signature {
         signature
+            .named(
+                "bind",
+                SyntaxShape::Record(Vec::default()),
+                "Custom key bindings. A record where the keys arae keymaps and the values are actions",
+                None,
+            )
             .switch("multi", "Select multiple values", Some('m'))
             .named("prompt", SyntaxShape::String, "Input prompt", None)
             .switch(
@@ -77,11 +93,13 @@ impl CliArguments {
 
     pub fn to_skim_options(&self) -> SkimOptions {
         let Self {
+            bind,
             multi,
             prompt,
             sync,
         } = self;
         SkimOptions {
+            bind: bind.iter().map(|b| b.as_str()).collect(),
             multi: *multi,
             prompt: prompt.as_deref(),
             sync: *sync,

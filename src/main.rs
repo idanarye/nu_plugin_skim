@@ -36,13 +36,13 @@ impl PluginCommand for Sk {
             .named(
                 "format",
                 SyntaxShape::Closure(Some(vec![])),
-                "modify the string to display",
+                "Modify the string to display",
                 None,
             )
             .named(
                 "preview",
                 SyntaxShape::Closure(Some(vec![])),
-                "generate a preview",
+                "Generate a preview",
                 None,
             );
         CliArguments::add_to_signature(signature)
