@@ -199,7 +199,7 @@ impl CliArguments {
             margin: margin.as_deref().or(Some("0,0,0,0")),
             no_clear: *no_clear,
             min_height: min_height.as_deref().or(Some("10")),
-            height: height.as_deref(),
+            height: height.as_deref().or(Some("100%")),
             sync: *sync,
             ..Default::default()
         }
