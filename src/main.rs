@@ -127,6 +127,10 @@ impl PluginCommand for Sk {
         let _foreground = engine.enter_foreground()?;
         let skim_output = Skim::run_with(&skim_options, Some(receiver)).unwrap();
 
+        if skim_output.is_abort {
+            return Ok(PipelineData::empty());
+        }
+
         let mut result = skim_output.selected_items.into_iter().map(|item| {
             (*item)
                 .as_any()
