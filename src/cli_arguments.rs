@@ -1,5 +1,5 @@
 use nu_plugin::EvaluatedCall;
-use nu_protocol::{LabeledError, Record, Signature, SyntaxShape};
+use nu_protocol::{LabeledError, Record, Signature, SyntaxShape, Value};
 use skim::SkimOptions;
 
 pub struct CliArguments {
@@ -7,7 +7,7 @@ pub struct CliArguments {
     multi: bool,
     prompt: Option<String>,
     //cmd_prompt: Option<String>,
-    //expect: Option<String>,
+    expect: Option<String>,
     //tac: bool,
     //nosort: bool,
     //tiebreak: Option<String>,
@@ -68,6 +68,20 @@ impl TryFrom<&EvaluatedCall> for CliArguments {
             },
             multi: call.has_flag("multi")?,
             prompt: call.get_flag("prompt")?,
+            expect: call
+                .get_flag::<Vec<Value>>("expect")?
+                .map(|expect| {
+                    let mut result = String::new();
+                    for key in expect.iter() {
+                        let key = key.coerce_str()?;
+                        if !result.is_empty() {
+                            result.push(',');
+                        }
+                        result.push_str(&key);
+                    }
+                    Ok::<_, LabeledError>(result)
+                })
+                .transpose()?,
             sync: call.has_flag("sync")?,
         })
     }
@@ -80,6 +94,12 @@ impl CliArguments {
                 "bind",
                 SyntaxShape::Record(Vec::default()),
                 "Custom key bindings. A record where the keys arae keymaps and the values are actions",
+                None,
+            )
+            .named(
+                "expect",
+                SyntaxShape::List(Box::new(SyntaxShape::String)),
+                "List of keys that can be used to complete sk in addition to the default enter key",
                 None,
             )
             .switch("multi", "Select multiple values", Some('m'))
@@ -96,12 +116,15 @@ impl CliArguments {
             bind,
             multi,
             prompt,
+            expect,
             sync,
         } = self;
+
         SkimOptions {
             bind: bind.iter().map(|b| b.as_str()).collect(),
             multi: *multi,
             prompt: prompt.as_deref(),
+            expect: expect.clone(),
             sync: *sync,
             ..Default::default()
         }

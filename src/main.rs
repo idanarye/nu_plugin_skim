@@ -8,7 +8,7 @@ use nu_item::NuItem;
 use nu_plugin::{serve_plugin, MsgPackSerializer, Plugin, PluginCommand};
 use nu_plugin::{EngineInterface, EvaluatedCall};
 use nu_protocol::{
-    Category, LabeledError, ListStream, PipelineData, Signature, SyntaxShape, Type, Value,
+    Category, LabeledError, ListStream, PipelineData, Record, Signature, SyntaxShape, Type, Value,
 };
 use skim::prelude::*;
 
@@ -125,9 +125,9 @@ impl PluginCommand for Sk {
         }
 
         let _foreground = engine.enter_foreground()?;
-        let selected = Skim::run_with(&skim_options, Some(receiver)).unwrap();
+        let skim_output = Skim::run_with(&skim_options, Some(receiver)).unwrap();
 
-        let mut result = selected.selected_items.into_iter().map(|item| {
+        let mut result = skim_output.selected_items.into_iter().map(|item| {
             (*item)
                 .as_any()
                 .downcast_ref::<NuItem>()
@@ -135,17 +135,50 @@ impl PluginCommand for Sk {
                 .value
                 .clone()
         });
-        if skim_options.multi {
-            Ok(PipelineData::ListStream(
-                ListStream::new(result, span, None),
+        if skim_options.expect.is_none() {
+            if skim_options.multi {
+                Ok(PipelineData::ListStream(
+                    ListStream::new(result, span, None),
+                    pipeline_metadata,
+                ))
+            } else {
+                Ok(if let Some(result) = result.next() {
+                    PipelineData::Value(result, pipeline_metadata)
+                } else {
+                    PipelineData::empty()
+                })
+            }
+        } else {
+            let mut record = Record::new();
+            record.push(
+                "action",
+                if let Event::EvActAccept(Some(action)) = skim_output.final_event {
+                    Value::string(action, span)
+                } else {
+                    Value::Nothing {
+                        internal_span: span,
+                    }
+                },
+            );
+
+            record.push(
+                "selected",
+                if skim_options.multi {
+                    Value::list(result.collect(), span)
+                } else if let Some(result) = result.next() {
+                    result
+                } else {
+                    Value::nothing(span)
+                },
+            );
+
+            Ok(PipelineData::Value(
+                Value::Record {
+                    val: record.into(),
+                    internal_span: span,
+                },
                 pipeline_metadata,
             ))
-        } else {
-            Ok(if let Some(result) = result.next() {
-                PipelineData::Value(result, pipeline_metadata)
-            } else {
-                PipelineData::empty()
-            })
         }
     }
 }
