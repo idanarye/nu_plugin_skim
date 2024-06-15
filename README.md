@@ -84,6 +84,8 @@ nu_plugin_skim aims to repliacte skim's sytnax, but there are some differences t
 
   When this flag is given (even with an empty list), the result will be a record with an `action` field that contains the action (or `null`, if regular `Return` was used) and a `selected` field that contains the selected item (or a list of them, if `-m` / `--multi` was used)
 
+* `--tiebreak` - unlike regular `sk` that receives actions as comma-specified list of criteria, here the criteria are given as a list of strings.
+
 * `--multi` / `-m` - this flag works exactly the same as in the regular skim, but unlike the regular skim that always returns text - here `sk` returns structured Nushell data, and this flag changes the type of that data. Without it, the chosen item is returned as is. With it, it gets returned as a list (even if the user only chooses a single item)
 
   ```nushell

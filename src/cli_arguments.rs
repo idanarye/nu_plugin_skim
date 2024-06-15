@@ -10,7 +10,7 @@ pub struct CliArguments {
     expect: Option<String>,
     tac: bool,
     nosort: bool,
-    //tiebreak: Option<String>,
+    tiebreak: Option<String>,
     //exact: bool,
     //cmd: Option<String>,
     //interactive: bool,
@@ -55,6 +55,25 @@ impl TryFrom<&EvaluatedCall> for CliArguments {
     type Error = LabeledError;
 
     fn try_from(call: &EvaluatedCall) -> Result<Self, Self::Error> {
+        fn to_comma_separated_list(
+            call: &EvaluatedCall,
+            flag_name: &str,
+        ) -> Result<Option<String>, LabeledError> {
+            if let Some(flag_value) = call.get_flag::<Vec<Value>>(flag_name)? {
+                let mut result = String::new();
+                for key in flag_value.iter() {
+                    let key = key.coerce_str()?;
+                    if !result.is_empty() {
+                        result.push(',');
+                    }
+                    result.push_str(&key);
+                }
+                Ok(Some(result))
+            } else {
+                Ok(None)
+            }
+        }
+
         Ok(Self {
             bind: if let Some(bind) = call.get_flag::<Record>("bind")? {
                 bind.iter()
@@ -68,22 +87,10 @@ impl TryFrom<&EvaluatedCall> for CliArguments {
             },
             multi: call.has_flag("multi")?,
             prompt: call.get_flag("prompt")?,
-            expect: call
-                .get_flag::<Vec<Value>>("expect")?
-                .map(|expect| {
-                    let mut result = String::new();
-                    for key in expect.iter() {
-                        let key = key.coerce_str()?;
-                        if !result.is_empty() {
-                            result.push(',');
-                        }
-                        result.push_str(&key);
-                    }
-                    Ok::<_, LabeledError>(result)
-                })
-                .transpose()?,
+            expect: to_comma_separated_list(call, "expect")?,
             tac: call.has_flag("tac")?,
             nosort: call.has_flag("no-sort")?,
+            tiebreak: to_comma_separated_list(call, "tiebreak")?,
             sync: call.has_flag("sync")?,
         })
     }
@@ -108,6 +115,12 @@ impl CliArguments {
             )
             .switch("tac", "Reverse  the  order  of  the search result (normally used together with --no-sort)", None)
             .switch("no-sort", "Do not sort the search result (normally used together with --tac)", None)
+            .named(
+                "tiebreak",
+                SyntaxShape::List(Box::new(SyntaxShape::String)),
+                "List of sort criteria to apply  when  the  scores are tied.",
+                None,
+            )
             .switch(
                 "sync",
                 "Wait for all the options to be available before choosing",
@@ -123,6 +136,7 @@ impl CliArguments {
             expect,
             tac,
             nosort,
+            tiebreak,
             sync,
         } = self;
 
@@ -133,6 +147,7 @@ impl CliArguments {
             expect: expect.clone(),
             tac: *tac,
             nosort: *nosort,
+            tiebreak: tiebreak.clone(),
             sync: *sync,
             ..Default::default()
         }
