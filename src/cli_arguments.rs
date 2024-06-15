@@ -19,8 +19,8 @@ pub struct CliArguments {
     regex: bool,
     //delimiter: Option<String>,
     //replstr: Option<String>,
-    //color: Option<String>,
-    //margin: Option<String>,
+    color: Option<String>,
+    margin: Option<String>,
     //no_height: bool,
     //no_clear: bool,
     //no_clear_start: bool,
@@ -93,6 +93,8 @@ impl TryFrom<&EvaluatedCall> for CliArguments {
             tiebreak: to_comma_separated_list(call, "tiebreak")?,
             exact: call.has_flag("exact")?,
             regex: call.has_flag("regex")?,
+            color: call.get_flag("color")?,
+            margin: call.get_flag("margin")?,
             sync: call.has_flag("sync")?,
         })
     }
@@ -133,6 +135,8 @@ impl CliArguments {
                 "Search with regular expression instead of fuzzy match",
                 None,
             )
+            .named("color", SyntaxShape::String, "Color configuration", None)
+            .named("margin", SyntaxShape::String, "Comma-separated expression for margins around the finder.", None)
             .switch(
                 "sync",
                 "Wait for all the options to be available before choosing",
@@ -151,6 +155,8 @@ impl CliArguments {
             tiebreak,
             exact,
             regex,
+            color,
+            margin,
             sync,
         } = self;
 
@@ -164,6 +170,8 @@ impl CliArguments {
             tiebreak: tiebreak.clone(),
             exact: *exact,
             regex: *regex,
+            color: color.as_deref(),
+            margin: margin.as_deref().or(Some("0,0,0,0")),
             sync: *sync,
             ..Default::default()
         }
