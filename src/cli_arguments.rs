@@ -1,6 +1,6 @@
 use nu_plugin::EvaluatedCall;
 use nu_protocol::{LabeledError, Record, Signature, SyntaxShape, Value};
-use skim::SkimOptions;
+use skim::{CaseMatching, FuzzyAlgorithm, SkimOptions};
 
 pub struct CliArguments {
     bind: Vec<String>,
@@ -36,8 +36,8 @@ pub struct CliArguments {
     //header: Option<String>,
     //header_lines: usize,
     layout: Option<String>,
-    //algorithm: FuzzyAlgorithm,
-    //case: CaseMatching,
+    algorithm: FuzzyAlgorithm,
+    case: CaseMatching,
     //engine_factory: Option<Rc<dyn MatchEngineFactory>>,
     //query_history: &'a [String],
     //cmd_history: &'a [String],
@@ -103,11 +103,24 @@ impl TryFrom<&EvaluatedCall> for CliArguments {
             preview_window: call.get_flag("preview-window")?,
             reverse: call.has_flag("reverse")?,
             tabstop: call.get_flag::<i64>("tabstop")?.map(|num| num.to_string()),
-            sync: call.has_flag("sync")?,
             no_hscroll: call.has_flag("no-hscroll")?,
             no_mouse: call.has_flag("no-mouse")?,
             inline_info: call.has_flag("inline-info")?,
             layout: call.get_flag("layout")?,
+            algorithm: call
+                .get_flag::<String>("algo")?
+                .as_deref()
+                .map(FuzzyAlgorithm::of)
+                .unwrap_or_default(),
+            case: match call.get_flag::<String>("case")?.as_deref() {
+                Some("smart") => CaseMatching::Smart,
+                Some("ignore") => CaseMatching::Ignore,
+                // This is messed up, but I'm trying to replicate regular skim's behavior as much
+                // as possible:
+                Some(_) => CaseMatching::Respect,
+                None => Default::default(),
+            },
+            sync: call.has_flag("sync")?,
         })
     }
 }
@@ -204,6 +217,23 @@ impl CliArguments {
                 "Choose the layout",
                 None,
             )
+            .named(
+                "algo",
+                SyntaxShape::String,
+                "Fuzzy matching algorithm",
+                None,
+            )
+            .named(
+                "case",
+                SyntaxShape::String,
+                "Case sensitivity (smart/ignore/respect)",
+                None,
+            )
+            .switch(
+                "no-ignore-case",
+                "Case-sensitive match",
+                None, // is it possible to get it to accept `+i`?
+            )
             .switch(
                 "sync",
                 "Wait for all the options to be available before choosing",
@@ -234,6 +264,8 @@ impl CliArguments {
             no_mouse,
             inline_info,
             layout,
+            algorithm,
+            case,
             sync,
         } = self;
 
@@ -263,6 +295,8 @@ impl CliArguments {
             } else {
                 layout.as_deref().unwrap_or("default")
             },
+            algorithm: *algorithm,
+            case: *case,
             sync: *sync,
             ..Default::default()
         }
