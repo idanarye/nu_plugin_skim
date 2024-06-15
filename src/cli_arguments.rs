@@ -27,7 +27,7 @@ pub struct CliArguments {
     min_height: Option<String>,
     height: Option<String>,
     //preview: Option<String>,
-    //preview_window: Option<String>,
+    preview_window: Option<String>,
     //reverse: bool,
     //tabstop: Option<String>,
     //no_hscroll: bool,
@@ -100,6 +100,7 @@ impl TryFrom<&EvaluatedCall> for CliArguments {
                 .get_flag::<i64>("min-height")?
                 .map(|num| num.to_string()),
             height: call.get_flag("height")?,
+            preview_window: call.get_flag("preview-window")?,
             sync: call.has_flag("sync")?,
         })
     }
@@ -159,6 +160,12 @@ impl CliArguments {
                 "Minimum height when --height is given in percent. Ignored when --height is not specified",
                 None,
             )
+            .named(
+                "preview-window",
+                SyntaxShape::String,
+                "Determines the layout of the preview window",
+                None,
+            )
             .switch(
                 "sync",
                 "Wait for all the options to be available before choosing",
@@ -182,6 +189,7 @@ impl CliArguments {
             no_clear,
             min_height,
             height,
+            preview_window,
             sync,
         } = self;
 
@@ -200,6 +208,7 @@ impl CliArguments {
             no_clear: *no_clear,
             min_height: min_height.as_deref().or(Some("10")),
             height: height.as_deref().or(Some("100%")),
+            preview_window: preview_window.as_deref().or(Some("right:50%")),
             sync: *sync,
             ..Default::default()
         }
