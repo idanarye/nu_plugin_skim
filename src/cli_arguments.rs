@@ -29,7 +29,7 @@ pub struct CliArguments {
     //preview: Option<String>,
     preview_window: Option<String>,
     //reverse: bool,
-    //tabstop: Option<String>,
+    tabstop: Option<String>,
     //no_hscroll: bool,
     //no_mouse: bool,
     //inline_info: bool,
@@ -101,6 +101,7 @@ impl TryFrom<&EvaluatedCall> for CliArguments {
                 .map(|num| num.to_string()),
             height: call.get_flag("height")?,
             preview_window: call.get_flag("preview-window")?,
+            tabstop: call.get_flag::<i64>("tabstop")?.map(|num| num.to_string()),
             sync: call.has_flag("sync")?,
         })
     }
@@ -166,6 +167,12 @@ impl CliArguments {
                 "Determines the layout of the preview window",
                 None,
             )
+            .named(
+                "tabstop",
+                SyntaxShape::Number,
+                "Number of spaces for a tab character",
+                None,
+            )
             .switch(
                 "sync",
                 "Wait for all the options to be available before choosing",
@@ -190,6 +197,7 @@ impl CliArguments {
             min_height,
             height,
             preview_window,
+            tabstop,
             sync,
         } = self;
 
@@ -209,6 +217,7 @@ impl CliArguments {
             min_height: min_height.as_deref().or(Some("10")),
             height: height.as_deref().or(Some("100%")),
             preview_window: preview_window.as_deref().or(Some("right:50%")),
+            tabstop: tabstop.as_deref(),
             sync: *sync,
             ..Default::default()
         }
