@@ -11,12 +11,12 @@ pub struct CliArguments {
     tac: bool,
     nosort: bool,
     tiebreak: Option<String>,
-    //exact: bool,
+    exact: bool,
     //cmd: Option<String>,
     //interactive: bool,
     //query: Option<String>,
     //cmd_query: Option<String>,
-    //regex: bool,
+    regex: bool,
     //delimiter: Option<String>,
     //replstr: Option<String>,
     //color: Option<String>,
@@ -91,6 +91,8 @@ impl TryFrom<&EvaluatedCall> for CliArguments {
             tac: call.has_flag("tac")?,
             nosort: call.has_flag("no-sort")?,
             tiebreak: to_comma_separated_list(call, "tiebreak")?,
+            exact: call.has_flag("exact")?,
+            regex: call.has_flag("regex")?,
             sync: call.has_flag("sync")?,
         })
     }
@@ -122,6 +124,16 @@ impl CliArguments {
                 None,
             )
             .switch(
+                "exact",
+                "Enable exact-match",
+                Some('e'),
+            )
+            .switch(
+                "regex",
+                "Search with regular expression instead of fuzzy match",
+                None,
+            )
+            .switch(
                 "sync",
                 "Wait for all the options to be available before choosing",
                 None,
@@ -137,6 +149,8 @@ impl CliArguments {
             tac,
             nosort,
             tiebreak,
+            exact,
+            regex,
             sync,
         } = self;
 
@@ -148,6 +162,8 @@ impl CliArguments {
             tac: *tac,
             nosort: *nosort,
             tiebreak: tiebreak.clone(),
+            exact: *exact,
+            regex: *regex,
             sync: *sync,
             ..Default::default()
         }
