@@ -22,7 +22,7 @@ pub struct CliArguments {
     color: Option<String>,
     margin: Option<String>,
     //no_height: bool,
-    //no_clear: bool,
+    no_clear: bool,
     //no_clear_start: bool,
     //min_height: Option<String>,
     //height: Option<String>,
@@ -95,6 +95,7 @@ impl TryFrom<&EvaluatedCall> for CliArguments {
             regex: call.has_flag("regex")?,
             color: call.get_flag("color")?,
             margin: call.get_flag("margin")?,
+            no_clear: call.has_flag("no-clear")?,
             sync: call.has_flag("sync")?,
         })
     }
@@ -138,6 +139,11 @@ impl CliArguments {
             .named("color", SyntaxShape::String, "Color configuration", None)
             .named("margin", SyntaxShape::String, "Comma-separated expression for margins around the finder.", None)
             .switch(
+                "no-clear",
+                "Do not clear finder interface on exit",
+                 None,
+            )
+            .switch(
                 "sync",
                 "Wait for all the options to be available before choosing",
                 None,
@@ -157,6 +163,7 @@ impl CliArguments {
             regex,
             color,
             margin,
+            no_clear,
             sync,
         } = self;
 
@@ -172,6 +179,7 @@ impl CliArguments {
             regex: *regex,
             color: color.as_deref(),
             margin: margin.as_deref().or(Some("0,0,0,0")),
+            no_clear: *no_clear,
             sync: *sync,
             ..Default::default()
         }
