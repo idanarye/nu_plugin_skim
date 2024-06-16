@@ -42,7 +42,7 @@ pub struct CliArguments {
     //query_history: &'a [String],
     //cmd_history: &'a [String],
     //cmd_collector: Rc<RefCell<dyn CommandCollector>>,
-    //keep_right: bool,
+    keep_right: bool,
     //skip_to_pattern: String,
     //select1: bool,
     //exit0: bool,
@@ -143,6 +143,7 @@ impl TryFrom<&EvaluatedCall> for CliArguments {
                 })
                 .transpose()?
                 .unwrap_or_default(),
+            keep_right: call.has_flag("keep-right")?,
             sync: call.has_flag("sync")?,
         })
     }
@@ -253,6 +254,11 @@ impl CliArguments {
                 None,
             )
             .switch(
+                "keep-right",
+                "Keep the right end of the line visible when it's too long",
+                None,
+            )
+            .switch(
                 "sync",
                 "Wait for all the options to be available before choosing",
                 None,
@@ -284,6 +290,7 @@ impl CliArguments {
             layout,
             algorithm,
             case,
+            keep_right,
             sync,
         } = self;
 
@@ -315,6 +322,7 @@ impl CliArguments {
             },
             algorithm: *algorithm,
             case: *case,
+            keep_right: *keep_right,
             sync: *sync,
             ..Default::default()
         }
