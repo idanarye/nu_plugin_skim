@@ -43,7 +43,7 @@ pub struct CliArguments {
     //cmd_history: &'a [String],
     //cmd_collector: Rc<RefCell<dyn CommandCollector>>,
     keep_right: bool,
-    //skip_to_pattern: String,
+    skip_to_pattern: Option<String>,
     //select1: bool,
     //exit0: bool,
     sync: bool,
@@ -144,6 +144,7 @@ impl TryFrom<&EvaluatedCall> for CliArguments {
                 .transpose()?
                 .unwrap_or_default(),
             keep_right: call.has_flag("keep-right")?,
+            skip_to_pattern: call.get_flag("skip-to-pattern")?,
             sync: call.has_flag("sync")?,
         })
     }
@@ -258,6 +259,12 @@ impl CliArguments {
                 "Keep the right end of the line visible when it's too long",
                 None,
             )
+            .named(
+                "skip-to-pattern",
+                SyntaxShape::String,
+                "Line will start with the start of the matched pattern",
+                None,
+            )
             .switch(
                 "sync",
                 "Wait for all the options to be available before choosing",
@@ -291,6 +298,7 @@ impl CliArguments {
             algorithm,
             case,
             keep_right,
+            skip_to_pattern,
             sync,
         } = self;
 
@@ -323,6 +331,7 @@ impl CliArguments {
             algorithm: *algorithm,
             case: *case,
             keep_right: *keep_right,
+            skip_to_pattern: skip_to_pattern.as_deref().unwrap_or(""),
             sync: *sync,
             ..Default::default()
         }
