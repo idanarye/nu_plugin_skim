@@ -32,7 +32,8 @@ impl PluginCommand for Sk {
     fn signature(&self) -> Signature {
         let signature = Signature::build(self.name())
             .input_output_type(Type::List(Type::Any.into()), Type::List(Type::Any.into()))
-            .category(Category::Experimental)
+            .category(Category::Filters)
+            .filter()
             .named(
                 "format",
                 SyntaxShape::Closure(Some(vec![])),

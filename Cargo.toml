@@ -3,8 +3,11 @@ name = "nu_plugin_skim"
 version = "0.1.0"
 authors = ["Idan Arye <IdanArye@gmail.com>"]
 edition = "2021"
-description = "a nushell plugin called skim"
+description = "An `sk` command that can handle Nushell's structured data"
 repository = "https://github.com/idanarye/nu_plugin_skim"
+readme = "README.md"
+keywords = ["nu", "plugin", "fuzzy", "menu", "util"]
+categories = ["command-line-utilities", "development-tools", "value-formatting"]
 license = "MIT"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
