@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.1](https://github.com/idanarye/nu_plugin_skim/compare/v0.1.0...v0.1.1) - 2024-06-16
+
+### Fixed
+- Make the install command in the README install from crates.io
+
 ## [0.1.0](https://github.com/idanarye/nu_plugin_skim/releases/tag/v0.1.0) - 2024-06-16
 
 ### Added
