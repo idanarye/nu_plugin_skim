@@ -44,8 +44,8 @@ pub struct CliArguments {
     //cmd_collector: Rc<RefCell<dyn CommandCollector>>,
     keep_right: bool,
     skip_to_pattern: Option<String>,
-    //select1: bool,
-    //exit0: bool,
+    select1: bool,
+    exit0: bool,
     sync: bool,
     //selector: Option<Rc<dyn Selector>>,
     //no_clear_if_empty: bool,
@@ -145,6 +145,8 @@ impl TryFrom<&EvaluatedCall> for CliArguments {
                 .unwrap_or_default(),
             keep_right: call.has_flag("keep-right")?,
             skip_to_pattern: call.get_flag("skip-to-pattern")?,
+            select1: call.has_flag("select-1")?,
+            exit0: call.has_flag("exit-0")?,
             sync: call.has_flag("sync")?,
         })
     }
@@ -266,6 +268,16 @@ impl CliArguments {
                 None,
             )
             .switch(
+                "select-1",
+                "Automatically select the only match",
+                Some('1'),
+            )
+            .switch(
+                "exit-0",
+                "Exit immediately when there's no match",
+                Some('0'),
+            )
+            .switch(
                 "sync",
                 "Wait for all the options to be available before choosing",
                 None,
@@ -299,6 +311,8 @@ impl CliArguments {
             case,
             keep_right,
             skip_to_pattern,
+            select1,
+            exit0,
             sync,
         } = self;
 
@@ -332,6 +346,8 @@ impl CliArguments {
             case: *case,
             keep_right: *keep_right,
             skip_to_pattern: skip_to_pattern.as_deref().unwrap_or(""),
+            select1: *select1,
+            exit0: *exit0,
             sync: *sync,
             ..Default::default()
         }
