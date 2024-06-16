@@ -9,7 +9,7 @@ The regular `sk` executable filters lines of text, but the `sk` command added by
 Install the crate using:
 
 ```nushell
-> cargo install --path .
+> cargo install nu_plugin_skim
 ```
 
 Then register the plugin using (this must be done inside Nushell):
