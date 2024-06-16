@@ -1,5 +1,5 @@
 use nu_plugin::EvaluatedCall;
-use nu_protocol::{LabeledError, Record, Signature, SyntaxShape, Value};
+use nu_protocol::{LabeledError, Record, ShellError, Signature, SyntaxShape, Value};
 use skim::{CaseMatching, FuzzyAlgorithm, SkimOptions};
 
 pub struct CliArguments {
@@ -110,16 +110,39 @@ impl TryFrom<&EvaluatedCall> for CliArguments {
             algorithm: call
                 .get_flag::<String>("algo")?
                 .as_deref()
-                .map(FuzzyAlgorithm::of)
+                .map(|flag| match flag {
+                    "skim_v1" => Ok(FuzzyAlgorithm::SkimV1),
+                    "skim_v2" => Ok(FuzzyAlgorithm::SkimV2),
+                    "clangd" => Ok(FuzzyAlgorithm::Clangd),
+                    _ => Err(ShellError::UnsupportedConfigValue {
+                        expected: "skim_v1|skim_v2|clangd".to_owned(),
+                        value: flag.to_owned(),
+                        span: call
+                            .get_flag_value("algo")
+                            .expect("we already know the flag exists")
+                            .span(),
+                    }),
+                })
+                .transpose()?
                 .unwrap_or_default(),
-            case: match call.get_flag::<String>("case")?.as_deref() {
-                Some("smart") => CaseMatching::Smart,
-                Some("ignore") => CaseMatching::Ignore,
-                // This is messed up, but I'm trying to replicate regular skim's behavior as much
-                // as possible:
-                Some(_) => CaseMatching::Respect,
-                None => Default::default(),
-            },
+            case: call
+                .get_flag::<String>("case")?
+                .as_deref()
+                .map(|flag| match flag {
+                    "smart" => Ok(CaseMatching::Smart),
+                    "ignore" => Ok(CaseMatching::Ignore),
+                    "respect" => Ok(CaseMatching::Respect),
+                    _ => Err(ShellError::UnsupportedConfigValue {
+                        expected: "[smart|ignore|respect]".to_owned(),
+                        value: flag.to_owned(),
+                        span: call
+                            .get_flag_value("case")
+                            .expect("we already know the flag exists")
+                            .span(),
+                    }),
+                })
+                .transpose()?
+                .unwrap_or_default(),
             sync: call.has_flag("sync")?,
         })
     }
@@ -220,19 +243,14 @@ impl CliArguments {
             .named(
                 "algo",
                 SyntaxShape::String,
-                "Fuzzy matching algorithm",
+                "Fuzzy matching algorithm: [skim_v1|skim_v2|clangd] (default: skim_v2)",
                 None,
             )
             .named(
                 "case",
                 SyntaxShape::String,
-                "Case sensitivity (smart/ignore/respect)",
+                "Case sensitivity: [smart|ignore|respect] (default: smart)",
                 None,
-            )
-            .switch(
-                "no-ignore-case",
-                "Case-sensitive match",
-                None, // is it possible to get it to accept `+i`?
             )
             .switch(
                 "sync",
