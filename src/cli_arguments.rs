@@ -30,7 +30,7 @@ pub struct CliArguments {
     margin: Option<String>,
     //no_height: bool,
     no_clear: bool,
-    //no_clear_start: bool,
+    no_clear_start: bool,
     min_height: Option<String>,
     height: Option<String>,
     //preview: Option<String>,
@@ -55,7 +55,7 @@ pub struct CliArguments {
     exit0: bool,
     sync: bool,
     selector: Option<Rc<dyn Selector>>,
-    //no_clear_if_empty: bool,
+    no_clear_if_empty: bool,
 }
 
 impl TryFrom<&EvaluatedCall> for CliArguments {
@@ -103,6 +103,7 @@ impl TryFrom<&EvaluatedCall> for CliArguments {
             color: call.get_flag("color")?,
             margin: call.get_flag("margin")?,
             no_clear: call.has_flag("no-clear")?,
+            no_clear_start: call.has_flag("no-clear-start")?,
             min_height: call
                 .get_flag::<i64>("min-height")?
                 .map(|num| num.to_string()),
@@ -189,6 +190,7 @@ impl TryFrom<&EvaluatedCall> for CliArguments {
                 }
                 Some(Rc::new(selector))
             },
+            no_clear_if_empty: call.has_flag("no-clear-if-empty")?,
         })
     }
 }
@@ -234,6 +236,11 @@ impl CliArguments {
                 "no-clear",
                 "Do not clear finder interface on exit",
                  None,
+            )
+            .switch(
+                "no-clear-start",
+                "Do not clear on start",
+                None,
             )
             .named(
                 "height",
@@ -347,6 +354,11 @@ impl CliArguments {
                 "Pre-select the items read from file",
                 None,
             )
+            .switch(
+                "no-clear-if-empty",
+                "Do not clear previous items if command returns empty result",
+                None,
+            )
     }
 
     pub fn to_skim_options(&self) -> SkimOptions {
@@ -363,6 +375,7 @@ impl CliArguments {
             color,
             margin,
             no_clear,
+            no_clear_start,
             min_height,
             height,
             preview_window,
@@ -380,6 +393,7 @@ impl CliArguments {
             exit0,
             sync,
             selector,
+            no_clear_if_empty,
         } = self;
 
         SkimOptions {
@@ -395,6 +409,7 @@ impl CliArguments {
             color: color.as_deref(),
             margin: margin.as_deref().or(Some("0,0,0,0")),
             no_clear: *no_clear,
+            no_clear_start: *no_clear_start,
             min_height: min_height.as_deref().or(Some("10")),
             height: height.as_deref().or(Some("100%")),
             preview_window: preview_window.as_deref().or(Some("right:50%")),
@@ -416,6 +431,7 @@ impl CliArguments {
             exit0: *exit0,
             sync: *sync,
             selector: selector.clone(),
+            no_clear_if_empty: *no_clear_if_empty,
             ..Default::default()
         }
     }
