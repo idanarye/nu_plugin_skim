@@ -21,7 +21,7 @@ pub struct CliArguments {
     exact: bool,
     //cmd: Option<String>,
     //interactive: bool,
-    //query: Option<String>,
+    query: Option<String>,
     //cmd_query: Option<String>,
     regex: bool,
     //delimiter: Option<String>,
@@ -99,6 +99,7 @@ impl TryFrom<&EvaluatedCall> for CliArguments {
             nosort: call.has_flag("no-sort")?,
             tiebreak: to_comma_separated_list(call, "tiebreak")?,
             exact: call.has_flag("exact")?,
+            query: call.get_flag("query")?,
             regex: call.has_flag("regex")?,
             color: call.get_flag("color")?,
             margin: call.get_flag("margin")?,
@@ -224,6 +225,12 @@ impl CliArguments {
                 "exact",
                 "Enable exact-match",
                 Some('e'),
+            )
+            .named(
+                "query",
+                SyntaxShape::String,
+                "Specify the initial query",
+                Some('q'),
             )
             .switch(
                 "regex",
@@ -371,6 +378,7 @@ impl CliArguments {
             nosort,
             tiebreak,
             exact,
+            query,
             regex,
             color,
             margin,
@@ -405,6 +413,7 @@ impl CliArguments {
             nosort: *nosort,
             tiebreak: tiebreak.clone(),
             exact: *exact,
+            query: query.as_deref(),
             regex: *regex,
             color: color.as_deref(),
             margin: margin.as_deref().or(Some("0,0,0,0")),
