@@ -1,6 +1,13 @@
+use std::{
+    fs::File,
+    io::{BufRead, BufReader},
+    path::PathBuf,
+    rc::Rc,
+};
+
 use nu_plugin::EvaluatedCall;
-use nu_protocol::{LabeledError, Record, ShellError, Signature, SyntaxShape, Value};
-use skim::{CaseMatching, FuzzyAlgorithm, SkimOptions};
+use nu_protocol::{LabeledError, Record, ShellError, Signature, Spanned, SyntaxShape, Value};
+use skim::{prelude::DefaultSkimSelector, CaseMatching, FuzzyAlgorithm, Selector, SkimOptions};
 
 pub struct CliArguments {
     bind: Vec<String>,
@@ -47,7 +54,7 @@ pub struct CliArguments {
     select1: bool,
     exit0: bool,
     sync: bool,
-    //selector: Option<Rc<dyn Selector>>,
+    selector: Option<Rc<dyn Selector>>,
     //no_clear_if_empty: bool,
 }
 
@@ -148,6 +155,40 @@ impl TryFrom<&EvaluatedCall> for CliArguments {
             select1: call.has_flag("select-1")?,
             exit0: call.has_flag("exit-0")?,
             sync: call.has_flag("sync")?,
+            selector: 'selector: {
+                let pre_select_n: Option<usize> = call.get_flag("pre-select-n")?;
+                let pre_select_pat: Option<String> = call.get_flag("pre-select-pat")?;
+                let pre_select_items: Option<Vec<String>> = call.get_flag("pre-select-items")?;
+                let pre_select_file: Option<Spanned<PathBuf>> = call.get_flag("pre-select-file")?;
+                if pre_select_n.is_none()
+                    && pre_select_pat.is_none()
+                    && pre_select_items.is_none()
+                    && pre_select_file.is_none()
+                {
+                    break 'selector None;
+                }
+                let mut selector = DefaultSkimSelector::default();
+                if let Some(n) = pre_select_n {
+                    selector = selector.first_n(n);
+                }
+                if let Some(pat) = pre_select_pat {
+                    selector = selector.regex(&pat);
+                }
+                if let Some(items) = pre_select_items {
+                    selector = selector.preset(items);
+                }
+                if let Some(file_path) = pre_select_file {
+                    let file = File::open(file_path.item).map_err(|e| {
+                        LabeledError::new(e.to_string()).with_label("here", file_path.span)
+                    })?;
+                    let items = BufReader::new(file)
+                        .lines()
+                        .collect::<Result<Vec<String>, _>>()
+                        .map_err(|e| LabeledError::new(e.to_string()))?;
+                    selector = selector.preset(items);
+                }
+                Some(Rc::new(selector))
+            },
         })
     }
 }
@@ -282,6 +323,30 @@ impl CliArguments {
                 "Wait for all the options to be available before choosing",
                 None,
             )
+            .named(
+                "pre-select-n",
+                SyntaxShape::Number,
+                "Pre-select the first n items in multi-selection mode",
+                None,
+            )
+            .named(
+                "pre-select-pat",
+                SyntaxShape::String,
+                "Pre-select the matched items in multi-selection mode",
+                None,
+            )
+            .named(
+                "pre-select-items",
+                SyntaxShape::List(Box::new(SyntaxShape::String)),
+                "Pre-select the items separated by newline character",
+                None,
+            )
+            .named(
+                "pre-select-file",
+                SyntaxShape::Filepath,
+                "Pre-select the items read from file",
+                None,
+            )
     }
 
     pub fn to_skim_options(&self) -> SkimOptions {
@@ -314,6 +379,7 @@ impl CliArguments {
             select1,
             exit0,
             sync,
+            selector,
         } = self;
 
         SkimOptions {
@@ -349,6 +415,7 @@ impl CliArguments {
             select1: *select1,
             exit0: *exit0,
             sync: *sync,
+            selector: selector.clone(),
             ..Default::default()
         }
     }

@@ -96,4 +96,6 @@ nu_plugin_skim aims to repliacte skim's sytnax, but there are some differences t
 
 * `--tiebreak` - unlike regular `sk` that receives actions as comma-specified list of criteria, here the criteria are given as a list of strings.
 
-* `--algo` and `--case` - in regular `sk` settings them to an unsupported value will fall back to the default. Here it'll raise an error.
+* `--algo` and `--case` - in regular `sk` setting them to an unsupported value will fall back to the default. Here it'll raise an error.
+
+* `--pre-select-items` - unlike regular `sk` where it receives a newline-seperated list, here it receives a Nushell list.
