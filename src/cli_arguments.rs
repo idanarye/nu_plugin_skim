@@ -28,7 +28,7 @@ pub struct CliArguments {
     //replstr: Option<String>,
     color: Option<String>,
     margin: Option<String>,
-    //no_height: bool,
+    no_height: bool,
     no_clear: bool,
     no_clear_start: bool,
     min_height: Option<String>,
@@ -103,6 +103,7 @@ impl TryFrom<&EvaluatedCall> for CliArguments {
             regex: call.has_flag("regex")?,
             color: call.get_flag("color")?,
             margin: call.get_flag("margin")?,
+            no_height: call.has_flag("no-height")?,
             no_clear: call.has_flag("no-clear")?,
             no_clear_start: call.has_flag("no-clear-start")?,
             min_height: call
@@ -239,6 +240,11 @@ impl CliArguments {
             )
             .named("color", SyntaxShape::String, "Color configuration", None)
             .named("margin", SyntaxShape::String, "Comma-separated expression for margins around the finder.", None)
+            .switch(
+                "no-height",
+                "Disable height feature",
+                 None,
+            )
             .switch(
                 "no-clear",
                 "Do not clear finder interface on exit",
@@ -382,6 +388,7 @@ impl CliArguments {
             regex,
             color,
             margin,
+            no_height,
             no_clear,
             no_clear_start,
             min_height,
@@ -417,6 +424,7 @@ impl CliArguments {
             regex: *regex,
             color: color.as_deref(),
             margin: margin.as_deref().or(Some("0,0,0,0")),
+            no_height: *no_height,
             no_clear: *no_clear,
             no_clear_start: *no_clear_start,
             min_height: min_height.as_deref().or(Some("10")),
