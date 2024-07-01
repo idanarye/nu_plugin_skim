@@ -18,6 +18,10 @@ impl Plugin for SkimPlugin {
     fn commands(&self) -> Vec<Box<dyn PluginCommand<Plugin = Self>>> {
         vec![Box::new(Sk)]
     }
+
+    fn version(&self) -> String {
+            env!("CARGO_PKG_VERSION").to_owned()
+    }
 }
 
 pub struct Sk;
