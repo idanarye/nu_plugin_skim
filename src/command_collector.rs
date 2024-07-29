@@ -20,16 +20,8 @@ impl CommandCollector for NuCommandCollector {
         skim::prelude::Sender<i32>,
         Option<std::thread::JoinHandle<()>>,
     ) {
-        // use std::fs;
-        // use std::io::Write;
-        // let mut file = fs::File::options()
-        // .create(true)
-        // .append(true)
-        // .open("/tmp/sklog.log")
-        // .unwrap();
-        // writeln!(&mut file, "inside invoke {:?}", cmd).unwrap();
         let (tx, rx) = unbounded::<Arc<dyn SkimItem>>();
-        let (tx_interrupt, _rx_interrupt) = unbounded();
+        let (tx_interrupt, rx_interrupt) = unbounded();
         let context = self.context.clone();
         let closure = self.closure.clone();
         let cmd = cmd.to_owned();
@@ -39,30 +31,66 @@ impl CommandCollector for NuCommandCollector {
             Some(std::thread::spawn(move || {
                 components_to_stop.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
 
-                if let Ok(ok) = context.engine.eval_closure_with_stream(
+                match context.engine.eval_closure_with_stream(
                     &closure,
                     vec![Value::String {
                         val: cmd,
-                        internal_span: Span { start: 0, end: 0 },
+                        internal_span: Span::unknown(),
                     }],
                     PipelineData::Empty,
                     true,
                     true,
                 ) {
-                    match ok {
-                        PipelineData::Empty => {}
-                        PipelineData::Value(value, _) => {
-                            tx.send(Arc::new(NuItem { context, value })).unwrap();
+                    Ok(PipelineData::Empty) => {}
+                    Ok(PipelineData::Value(value, _)) => {
+                        let _ = tx.send(Arc::new(NuItem { context, value }));
+                    }
+                    Ok(PipelineData::ListStream(stream, _)) => {
+                        for value in stream {
+                            if rx_interrupt.try_recv().is_ok() {
+                                break;
+                            }
+                            let send_result = tx.try_send(Arc::new(NuItem {
+                                context: context.clone(),
+                                value,
+                            }));
+                            if send_result.is_err() {
+                                break;
+                            }
                         }
-                        PipelineData::ListStream(_, _) => todo!(),
-                        PipelineData::ByteStream(_, _) => todo!(),
+                    }
+                    Ok(PipelineData::ByteStream(stream, _)) => {
+                        let span = stream.span();
+                        if let Some(lines) = stream.lines() {
+                            for line in lines {
+                                if rx_interrupt.try_recv().is_ok() {
+                                    break;
+                                }
+                                let send_result = match line {
+                                    Ok(line) => tx.try_send(Arc::new(NuItem {
+                                        context: context.clone(),
+                                        value: Value::string(line, span),
+                                    })),
+                                    Err(err) => tx.try_send(Arc::new(NuItem {
+                                        context: context.clone(),
+                                        value: Value::error(err, span),
+                                    })),
+                                };
+                                if send_result.is_err() {
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    Err(err) => {
+                        let _ = tx.try_send(Arc::new(NuItem {
+                            context: context.clone(),
+                            value: Value::error(err, Span::unknown()),
+                        }));
                     }
                 }
 
-                // let rcv = rx_interrupt.recv();
-                // writeln!(&mut file, "rcv {:?}", rcv).unwrap();
                 components_to_stop.fetch_sub(1, std::sync::atomic::Ordering::SeqCst);
-                // writeln!(&mut file, "finished thread of {:?}", cmd).unwrap();
             })),
         )
     }
