@@ -1,20 +1,13 @@
 use std::{
-    cell::RefCell,
     fs::File,
     io::{BufRead, BufReader},
     path::PathBuf,
-    rc::Rc,
     sync::Arc,
 };
 
 use nu_plugin::EvaluatedCall;
-use nu_protocol::{
-    engine::Closure, LabeledError, Record, ShellError, Signature, Spanned, SyntaxShape, Value,
-};
-use skim::{
-    prelude::{DefaultSkimSelector, SkimItemReader},
-    CaseMatching, FuzzyAlgorithm, Selector, SkimOptions,
-};
+use nu_protocol::{LabeledError, Record, ShellError, Signature, Spanned, SyntaxShape, Value};
+use skim::{prelude::DefaultSkimSelector, CaseMatching, FuzzyAlgorithm, Selector, SkimOptions};
 
 pub struct CliArguments {
     bind: Vec<String>,
@@ -26,7 +19,7 @@ pub struct CliArguments {
     nosort: bool,
     tiebreak: Option<String>,
     exact: bool,
-    cmd: Option<Closure>,
+    //cmd: Option<Closure>,
     interactive: bool,
     query: Option<String>,
     cmd_query: Option<String>,
@@ -107,7 +100,6 @@ impl TryFrom<&EvaluatedCall> for CliArguments {
             nosort: call.has_flag("no-sort")?,
             tiebreak: to_comma_separated_list(call, "tiebreak")?,
             exact: call.has_flag("exact")?,
-            cmd: call.get_flag("cmd")?,
             interactive: call.has_flag("interactive")?,
             query: call.get_flag("query")?,
             cmd_query: call.get_flag("cmd-query")?,
@@ -238,12 +230,6 @@ impl CliArguments {
                 "exact",
                 "Enable exact-match",
                 Some('e'),
-            )
-            .named(
-                "cmd",
-                SyntaxShape::Closure(None),
-                "Command to invoke dynamically",
-                Some('c'),
             )
             .switch("interactive", "Start skim in interactive(command) mode", Some('i'))
             .named(
@@ -410,7 +396,6 @@ impl CliArguments {
             nosort,
             tiebreak,
             exact,
-            cmd,
             interactive,
             query,
             cmd_query,
@@ -450,6 +435,8 @@ impl CliArguments {
             nosort: *nosort,
             tiebreak: tiebreak.clone(),
             exact: *exact,
+            //cmd: cmd.is_some().then(|| "ls"),
+            cmd: Some("ls"),
             interactive: *interactive,
             query: query.as_deref(),
             cmd_query: cmd_query.as_deref(),
@@ -474,11 +461,18 @@ impl CliArguments {
             },
             algorithm: *algorithm,
             case: *case,
-            cmd_collector: Rc::new(RefCell::new(if let Some(_cmd) = cmd {
-                todo!("Implement command")
-            } else {
-                SkimItemReader::default()
-            })),
+            // cmd_collector: if let Some(cmd) = cmd {
+            // use std::fs;
+            // use std::io::Write;
+            // let mut file = fs::File::options().create(true).append(true).open("/tmp/sklog.log").unwrap();
+            // writeln!(&mut file, "Creating it").unwrap();
+            // Rc::new(RefCell::new(NuCommandCollector {
+            // context,
+            // closure: cmd.clone(),
+            // }))
+            // } else {
+            // Rc::new(RefCell::new(SkimItemReader::default()))
+            // },
             keep_right: *keep_right,
             skip_to_pattern: skip_to_pattern.as_deref().unwrap_or(""),
             select1: *select1,
