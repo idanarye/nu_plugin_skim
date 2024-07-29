@@ -92,6 +92,7 @@ impl PluginCommand for Sk {
         let command_context = Arc::new(command_context);
 
         if let Some(closure) = call.get_flag("cmd")? {
+            skim_options.cmd = Some("{}");
             skim_options.cmd_collector = Rc::new(RefCell::new(NuCommandCollector {
                 context: command_context.clone(),
                 closure,
