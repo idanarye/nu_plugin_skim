@@ -2,7 +2,7 @@ use std::{
     fs::File,
     io::{BufRead, BufReader},
     path::PathBuf,
-    rc::Rc,
+    sync::Arc,
 };
 
 use nu_plugin::EvaluatedCall;
@@ -54,7 +54,7 @@ pub struct CliArguments {
     select1: bool,
     exit0: bool,
     sync: bool,
-    selector: Option<Rc<dyn Selector>>,
+    selector: Option<Arc<dyn Selector>>,
     no_clear_if_empty: bool,
 }
 
@@ -190,7 +190,7 @@ impl TryFrom<&EvaluatedCall> for CliArguments {
                         .map_err(|e| LabeledError::new(e.to_string()))?;
                     selector = selector.preset(items);
                 }
-                Some(Rc::new(selector))
+                Some(Arc::new(selector))
             },
             no_clear_if_empty: call.has_flag("no-clear-if-empty")?,
         })

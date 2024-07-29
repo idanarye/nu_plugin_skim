@@ -20,7 +20,7 @@ impl Plugin for SkimPlugin {
     }
 
     fn version(&self) -> String {
-            env!("CARGO_PKG_VERSION").to_owned()
+        env!("CARGO_PKG_VERSION").to_owned()
     }
 }
 
@@ -137,8 +137,7 @@ impl PluginCommand for Sk {
         }
 
         let mut result = skim_output.selected_items.into_iter().map(|item| {
-            (*item)
-                .as_any()
+            item.as_any()
                 .downcast_ref::<NuItem>()
                 .unwrap()
                 .value
