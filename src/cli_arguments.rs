@@ -1,28 +1,35 @@
 use std::{
+    cell::RefCell,
     fs::File,
     io::{BufRead, BufReader},
     path::PathBuf,
+    rc::Rc,
     sync::Arc,
 };
 
 use nu_plugin::EvaluatedCall;
-use nu_protocol::{LabeledError, Record, ShellError, Signature, Spanned, SyntaxShape, Value};
-use skim::{prelude::DefaultSkimSelector, CaseMatching, FuzzyAlgorithm, Selector, SkimOptions};
+use nu_protocol::{
+    engine::Closure, LabeledError, Record, ShellError, Signature, Spanned, SyntaxShape, Value,
+};
+use skim::{
+    prelude::{DefaultSkimSelector, SkimItemReader},
+    CaseMatching, FuzzyAlgorithm, Selector, SkimOptions,
+};
 
 pub struct CliArguments {
     bind: Vec<String>,
     multi: bool,
     prompt: Option<String>,
-    //cmd_prompt: Option<String>,
+    cmd_prompt: Option<String>,
     expect: Option<String>,
     tac: bool,
     nosort: bool,
     tiebreak: Option<String>,
     exact: bool,
-    //cmd: Option<String>,
-    //interactive: bool,
+    cmd: Option<Closure>,
+    interactive: bool,
     query: Option<String>,
-    //cmd_query: Option<String>,
+    cmd_query: Option<String>,
     regex: bool,
     //delimiter: Option<String>,
     //replstr: Option<String>,
@@ -94,12 +101,16 @@ impl TryFrom<&EvaluatedCall> for CliArguments {
             },
             multi: call.has_flag("multi")?,
             prompt: call.get_flag("prompt")?,
+            cmd_prompt: call.get_flag("cmd-prompt")?,
             expect: to_comma_separated_list(call, "expect")?,
             tac: call.has_flag("tac")?,
             nosort: call.has_flag("no-sort")?,
             tiebreak: to_comma_separated_list(call, "tiebreak")?,
             exact: call.has_flag("exact")?,
+            cmd: call.get_flag("cmd")?,
+            interactive: call.has_flag("interactive")?,
             query: call.get_flag("query")?,
+            cmd_query: call.get_flag("cmd-query")?,
             regex: call.has_flag("regex")?,
             color: call.get_flag("color")?,
             margin: call.get_flag("margin")?,
@@ -208,6 +219,7 @@ impl CliArguments {
             )
             .switch("multi", "Select multiple values", Some('m'))
             .named("prompt", SyntaxShape::String, "Input prompt", None)
+            .named("cmd-prompt", SyntaxShape::String, "Command mode prompt", None)
             .named(
                 "expect",
                 SyntaxShape::List(Box::new(SyntaxShape::String)),
@@ -228,10 +240,23 @@ impl CliArguments {
                 Some('e'),
             )
             .named(
+                "cmd",
+                SyntaxShape::Closure(None),
+                "Command to invoke dynamically",
+                Some('c'),
+            )
+            .switch("interactive", "Start skim in interactive(command) mode", Some('i'))
+            .named(
                 "query",
                 SyntaxShape::String,
                 "Specify the initial query",
                 Some('q'),
+            )
+            .named(
+                "cmd-query",
+                SyntaxShape::String,
+                "Specify the initial query for interactive mode",
+                None,
             )
             .switch(
                 "regex",
@@ -379,12 +404,16 @@ impl CliArguments {
             bind,
             multi,
             prompt,
+            cmd_prompt,
             expect,
             tac,
             nosort,
             tiebreak,
             exact,
+            cmd,
+            interactive,
             query,
+            cmd_query,
             regex,
             color,
             margin,
@@ -415,12 +444,15 @@ impl CliArguments {
             bind: bind.iter().map(|b| b.as_str()).collect(),
             multi: *multi,
             prompt: prompt.as_deref(),
+            cmd_prompt: cmd_prompt.as_deref(),
             expect: expect.clone(),
             tac: *tac,
             nosort: *nosort,
             tiebreak: tiebreak.clone(),
             exact: *exact,
+            interactive: *interactive,
             query: query.as_deref(),
+            cmd_query: cmd_query.as_deref(),
             regex: *regex,
             color: color.as_deref(),
             margin: margin.as_deref().or(Some("0,0,0,0")),
@@ -442,6 +474,11 @@ impl CliArguments {
             },
             algorithm: *algorithm,
             case: *case,
+            cmd_collector: Rc::new(RefCell::new(if let Some(_cmd) = cmd {
+                todo!("Implement command")
+            } else {
+                SkimItemReader::default()
+            })),
             keep_right: *keep_right,
             skip_to_pattern: skip_to_pattern.as_deref().unwrap_or(""),
             select1: *select1,
