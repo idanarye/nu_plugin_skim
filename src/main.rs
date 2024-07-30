@@ -94,6 +94,9 @@ impl PluginCommand for Sk {
         let command_context = Arc::new(command_context);
 
         if let Some(closure) = call.get_flag("cmd")? {
+            // This is a hack to make Skim conjure what it thinks is the actual command but is
+            // actually just the query, which will be sent to as the `cmd` argument to
+            // `NuCommandCollector.invoke`.
             skim_options.cmd = Some("{}");
             skim_options.cmd_collector = Rc::new(RefCell::new(NuCommandCollector {
                 context: command_context.clone(),

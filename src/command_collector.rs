@@ -13,7 +13,7 @@ pub struct NuCommandCollector {
 impl CommandCollector for NuCommandCollector {
     fn invoke(
         &mut self,
-        cmd: &str,
+        cmd: &str, // not really the command - actually the query string
         components_to_stop: std::sync::Arc<std::sync::atomic::AtomicUsize>,
     ) -> (
         skim::SkimItemReceiver,
@@ -41,24 +41,6 @@ impl CommandCollector for NuCommandCollector {
                     true,
                     true,
                 ) {
-                    Ok(PipelineData::Empty) => {}
-                    Ok(PipelineData::Value(value, _)) => {
-                        let _ = tx.send(Arc::new(NuItem { context, value }));
-                    }
-                    Ok(PipelineData::ListStream(stream, _)) => {
-                        for value in stream {
-                            if rx_interrupt.try_recv().is_ok() {
-                                break;
-                            }
-                            let send_result = tx.try_send(Arc::new(NuItem {
-                                context: context.clone(),
-                                value,
-                            }));
-                            if send_result.is_err() {
-                                break;
-                            }
-                        }
-                    }
                     Ok(PipelineData::ByteStream(stream, _)) => {
                         let span = stream.span();
                         if let Some(lines) = stream.lines() {
@@ -79,6 +61,20 @@ impl CommandCollector for NuCommandCollector {
                                 if send_result.is_err() {
                                     break;
                                 }
+                            }
+                        }
+                    }
+                    Ok(stream) => {
+                        for value in stream {
+                            if rx_interrupt.try_recv().is_ok() {
+                                break;
+                            }
+                            let send_result = tx.try_send(Arc::new(NuItem {
+                                context: context.clone(),
+                                value,
+                            }));
+                            if send_result.is_err() {
+                                break;
                             }
                         }
                     }
