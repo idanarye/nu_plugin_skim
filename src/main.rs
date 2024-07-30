@@ -36,28 +36,30 @@ impl PluginCommand for Sk {
     }
 
     fn signature(&self) -> Signature {
-        let signature = Signature::build(self.name())
-            .input_output_type(Type::List(Type::Any.into()), Type::List(Type::Any.into()))
-            .category(Category::Filters)
-            .filter()
-            .named(
-                "format",
-                SyntaxShape::Closure(Some(vec![])),
-                "Modify the string to display",
-                None,
-            )
-            .named(
-                "preview",
-                SyntaxShape::Closure(Some(vec![])),
-                "Generate a preview",
-                None,
-            )
-            .named(
-                "cmd",
-                SyntaxShape::Closure(None),
-                "Command to invoke dynamically",
-                Some('c'),
-            );
+        let signature = {
+            Signature::build(self.name())
+                .input_output_type(Type::List(Type::Any.into()), Type::List(Type::Any.into()))
+                .category(Category::Filters)
+                .filter()
+                .named(
+                    "format",
+                    SyntaxShape::Closure(Some(vec![])),
+                    "Modify the string to display",
+                    None,
+                )
+                .named(
+                    "preview",
+                    SyntaxShape::Closure(Some(vec![])),
+                    "Generate a preview",
+                    None,
+                )
+                .named(
+                    "cmd",
+                    SyntaxShape::Closure(None),
+                    "Command to invoke dynamically",
+                    Some('c'),
+                )
+        };
         CliArguments::add_to_signature(signature)
     }
 
