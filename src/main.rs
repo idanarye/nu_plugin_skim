@@ -1,8 +1,10 @@
 mod cli_arguments;
+mod command_collector;
 mod command_context;
 mod nu_item;
 
 use cli_arguments::CliArguments;
+use command_collector::NuCommandCollector;
 use command_context::CommandContext;
 use nu_item::NuItem;
 use nu_plugin::{serve_plugin, MsgPackSerializer, Plugin, PluginCommand};
@@ -34,22 +36,30 @@ impl PluginCommand for Sk {
     }
 
     fn signature(&self) -> Signature {
-        let signature = Signature::build(self.name())
-            .input_output_type(Type::List(Type::Any.into()), Type::List(Type::Any.into()))
-            .category(Category::Filters)
-            .filter()
-            .named(
-                "format",
-                SyntaxShape::Closure(Some(vec![])),
-                "Modify the string to display",
-                None,
-            )
-            .named(
-                "preview",
-                SyntaxShape::Closure(Some(vec![])),
-                "Generate a preview",
-                None,
-            );
+        let signature = {
+            Signature::build(self.name())
+                .input_output_type(Type::List(Type::Any.into()), Type::List(Type::Any.into()))
+                .category(Category::Filters)
+                .filter()
+                .named(
+                    "format",
+                    SyntaxShape::Closure(Some(vec![])),
+                    "Modify the string to display",
+                    None,
+                )
+                .named(
+                    "preview",
+                    SyntaxShape::Closure(Some(vec![])),
+                    "Generate a preview",
+                    None,
+                )
+                .named(
+                    "cmd",
+                    SyntaxShape::Closure(None),
+                    "Command to invoke dynamically",
+                    Some('c'),
+                )
+        };
         CliArguments::add_to_signature(signature)
     }
 
@@ -83,13 +93,26 @@ impl PluginCommand for Sk {
 
         let command_context = Arc::new(command_context);
 
-        let (sender, receiver) = unbounded::<Arc<dyn SkimItem>>();
+        if let Some(closure) = call.get_flag("cmd")? {
+            // This is a hack to make Skim conjure what it thinks is the actual command but is
+            // actually just the query, which will be sent to as the `cmd` argument to
+            // `NuCommandCollector.invoke`.
+            skim_options.cmd = Some("{}");
+            skim_options.cmd_collector = Rc::new(RefCell::new(NuCommandCollector {
+                context: command_context.clone(),
+                closure,
+            }))
+        }
 
-        match input {
+        let receiver = match input {
             PipelineData::Empty => {
-                return Ok(PipelineData::empty());
+                if skim_options.cmd.is_none() {
+                    return Ok(PipelineData::empty());
+                }
+                None
             }
             PipelineData::Value(_, _) | PipelineData::ListStream(_, _) => {
+                let (sender, receiver) = unbounded::<Arc<dyn SkimItem>>();
                 std::thread::spawn(move || {
                     for entry in input.into_iter() {
                         if sender
@@ -104,11 +127,13 @@ impl PluginCommand for Sk {
                         }
                     }
                 });
+                Some(receiver)
             }
             PipelineData::ByteStream(byte_stream, _) => {
                 let Some(lines) = byte_stream.lines() else {
                     return Ok(PipelineData::empty());
                 };
+                let (sender, receiver) = unbounded::<Arc<dyn SkimItem>>();
                 std::thread::spawn(move || {
                     for line in lines {
                         if sender
@@ -126,11 +151,12 @@ impl PluginCommand for Sk {
                         }
                     }
                 });
+                Some(receiver)
             }
-        }
+        };
 
         let _foreground = engine.enter_foreground()?;
-        let skim_output = Skim::run_with(&skim_options, Some(receiver)).unwrap();
+        let skim_output = Skim::run_with(&skim_options, receiver).unwrap();
 
         if skim_output.is_abort {
             return Ok(PipelineData::empty());
