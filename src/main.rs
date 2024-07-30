@@ -10,7 +10,7 @@ use nu_item::NuItem;
 use nu_plugin::{serve_plugin, MsgPackSerializer, Plugin, PluginCommand};
 use nu_plugin::{EngineInterface, EvaluatedCall};
 use nu_protocol::{
-    Category, LabeledError, ListStream, PipelineData, Record, Signature, SyntaxShape, Type, Value,
+    Category, LabeledError, ListStream, PipelineData, Record, Signals, Signature, SyntaxShape, Type, Value
 };
 use skim::prelude::*;
 
@@ -172,7 +172,7 @@ impl PluginCommand for Sk {
         if skim_options.expect.is_none() {
             if skim_options.multi {
                 Ok(PipelineData::ListStream(
-                    ListStream::new(result, span, None),
+                    ListStream::new(result, span, Signals::EMPTY),
                     pipeline_metadata,
                 ))
             } else {

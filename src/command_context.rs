@@ -1,4 +1,4 @@
-use std::borrow::Cow;
+use std::{borrow::Cow, sync::Arc};
 
 use nu_plugin::EngineInterface;
 use nu_protocol::{
@@ -9,7 +9,7 @@ use crate::nu_item::NuItem;
 
 pub struct CommandContext {
     pub engine: EngineInterface,
-    pub nu_config: nu_protocol::Config,
+    pub nu_config: Arc<nu_protocol::Config>,
     pub format: MapperFlag,
     pub preview: MapperFlag,
 }
@@ -18,7 +18,7 @@ impl CommandContext {
     pub fn new(engine: &EngineInterface) -> Result<Self, LabeledError> {
         Ok(Self {
             engine: engine.clone(),
-            nu_config: *engine.get_config()?,
+            nu_config: engine.get_config()?.clone(),
             format: MapperFlag::None,
             preview: MapperFlag::None,
         })

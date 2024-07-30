@@ -1,7 +1,7 @@
 on:
   push:
     branches:
-      - main
+      - side-release/nu-0.96
 
 permissions:
   contents: write
@@ -19,3 +19,4 @@ jobs:
           # this is a built-in strategy in release-please, see "Action Inputs"
           # for more options
           release-type: rust
+          target-branch: side-release/nu-0.96
