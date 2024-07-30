@@ -1,7 +1,6 @@
 use nu_color_config::{StyleComputer, StyleMapping};
 use nu_protocol::{
-    engine::{EngineState, Stack},
-    Span, Value,
+    engine::{EngineState, Stack}, Signals, Span, Value
 };
 use nu_table::{ExpandedTable, TableOpts};
 use skim::prelude::*;
@@ -31,7 +30,7 @@ impl SkimItem for NuItem {
         let table_opts = TableOpts::new(
             &self.context.nu_config,
             &style_computer,
-            None,
+            &Signals::EMPTY, // TODO: actually send a signal when switching item? Is this necessary?
             Span::new(0, 0), // TODO: figure the correct span?
             context.width,
             (
