@@ -1,6 +1,7 @@
 use nu_color_config::{StyleComputer, StyleMapping};
 use nu_protocol::{
-    engine::{EngineState, Stack}, Signals, Span, Value
+    engine::{EngineState, Stack},
+    Signals, Span, Value,
 };
 use nu_table::{ExpandedTable, TableOpts};
 use skim::prelude::*;

@@ -10,7 +10,8 @@ use nu_item::NuItem;
 use nu_plugin::{serve_plugin, MsgPackSerializer, Plugin, PluginCommand};
 use nu_plugin::{EngineInterface, EvaluatedCall};
 use nu_protocol::{
-    Category, LabeledError, ListStream, PipelineData, Record, Signals, Signature, SyntaxShape, Type, Value
+    Category, LabeledError, ListStream, PipelineData, Record, Signals, Signature, SyntaxShape,
+    Type, Value,
 };
 use skim::prelude::*;
 
@@ -163,7 +164,8 @@ impl PluginCommand for Sk {
         }
 
         let mut result = skim_output.selected_items.into_iter().map(|item| {
-            item.as_any()
+            (*item)
+                .as_any()
                 .downcast_ref::<NuItem>()
                 .unwrap()
                 .value
