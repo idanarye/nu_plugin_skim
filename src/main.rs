@@ -2,6 +2,7 @@ mod cli_arguments;
 mod command_collector;
 mod command_context;
 mod nu_item;
+mod predicate_based_selector;
 
 use cli_arguments::CliArguments;
 use command_collector::NuCommandCollector;
@@ -79,7 +80,7 @@ impl PluginCommand for Sk {
 
         let pipeline_metadata = input.metadata();
 
-        let cli_arguments = CliArguments::try_from(call)?;
+        let cli_arguments = CliArguments::new(call, engine)?;
         let mut skim_options = cli_arguments.to_skim_options();
 
         let mut command_context = CommandContext::new(engine)?;

@@ -5,9 +5,13 @@ use std::{
     sync::Arc,
 };
 
-use nu_plugin::EvaluatedCall;
-use nu_protocol::{LabeledError, Record, ShellError, Signature, Spanned, SyntaxShape, Value};
+use nu_plugin::{EngineInterface, EvaluatedCall};
+use nu_protocol::{
+    engine::Closure, LabeledError, Record, ShellError, Signature, Spanned, SyntaxShape, Value,
+};
 use skim::{prelude::DefaultSkimSelector, CaseMatching, FuzzyAlgorithm, Selector, SkimOptions};
+
+use crate::predicate_based_selector::{CombinedSelector, PredicateBasedSelector};
 
 pub struct CliArguments {
     bind: Vec<String>,
@@ -58,10 +62,8 @@ pub struct CliArguments {
     no_clear_if_empty: bool,
 }
 
-impl TryFrom<&EvaluatedCall> for CliArguments {
-    type Error = LabeledError;
-
-    fn try_from(call: &EvaluatedCall) -> Result<Self, Self::Error> {
+impl CliArguments {
+    pub fn new(call: &EvaluatedCall, engine: &EngineInterface) -> Result<Self, LabeledError> {
         fn to_comma_separated_list(
             call: &EvaluatedCall,
             flag_name: &str,
@@ -161,29 +163,19 @@ impl TryFrom<&EvaluatedCall> for CliArguments {
             select1: call.has_flag("select-1")?,
             exit0: call.has_flag("exit-0")?,
             sync: call.has_flag("sync")?,
-            selector: 'selector: {
-                let pre_select_n: Option<usize> = call.get_flag("pre-select-n")?;
-                let pre_select_pat: Option<String> = call.get_flag("pre-select-pat")?;
-                let pre_select_items: Option<Vec<String>> = call.get_flag("pre-select-items")?;
-                let pre_select_file: Option<Spanned<PathBuf>> = call.get_flag("pre-select-file")?;
-                if pre_select_n.is_none()
-                    && pre_select_pat.is_none()
-                    && pre_select_items.is_none()
-                    && pre_select_file.is_none()
-                {
-                    break 'selector None;
+            selector: {
+                let mut dumb_selector: Option<DefaultSkimSelector> = None;
+                // dumb_selector.get_or_insert_with(Default::default);
+                if let Some(n) = call.get_flag::<usize>("pre-select-n")? {
+                    dumb_selector = Some(dumb_selector.take().unwrap_or_default().first_n(n));
                 }
-                let mut selector = DefaultSkimSelector::default();
-                if let Some(n) = pre_select_n {
-                    selector = selector.first_n(n);
+                if let Some(pat) = call.get_flag::<String>("pre-select-pat")? {
+                    dumb_selector = Some(dumb_selector.take().unwrap_or_default().regex(&pat));
                 }
-                if let Some(pat) = pre_select_pat {
-                    selector = selector.regex(&pat);
+                if let Some(items) = call.get_flag::<Vec<String>>("pre-select-items")? {
+                    dumb_selector = Some(dumb_selector.take().unwrap_or_default().preset(items));
                 }
-                if let Some(items) = pre_select_items {
-                    selector = selector.preset(items);
-                }
-                if let Some(file_path) = pre_select_file {
+                if let Some(file_path) = call.get_flag::<Spanned<PathBuf>>("pre-select-file")? {
                     let file = File::open(file_path.item).map_err(|e| {
                         LabeledError::new(e.to_string()).with_label("here", file_path.span)
                     })?;
@@ -191,16 +183,31 @@ impl TryFrom<&EvaluatedCall> for CliArguments {
                         .lines()
                         .collect::<Result<Vec<String>, _>>()
                         .map_err(|e| LabeledError::new(e.to_string()))?;
-                    selector = selector.preset(items);
+                    dumb_selector = Some(dumb_selector.take().unwrap_or_default().preset(items));
                 }
-                Some(Arc::new(selector))
+                if let Some(predicate) = call.get_flag::<Spanned<Closure>>("pre-select")? {
+                    let predicate_based_selector = PredicateBasedSelector {
+                        engine: engine.clone(),
+                        predicate,
+                    };
+                    if let Some(dumb_selector) = dumb_selector {
+                        Some(Arc::new(CombinedSelector(
+                            dumb_selector,
+                            predicate_based_selector,
+                        )))
+                    } else {
+                        Some(Arc::new(predicate_based_selector))
+                    }
+                } else if let Some(dumb_selector) = dumb_selector {
+                    Some(Arc::new(dumb_selector))
+                } else {
+                    None
+                }
             },
             no_clear_if_empty: call.has_flag("no-clear-if-empty")?,
         })
     }
-}
 
-impl CliArguments {
     pub fn add_to_signature(signature: Signature) -> Signature {
         signature
             .named(
@@ -376,6 +383,12 @@ impl CliArguments {
                 "pre-select-file",
                 SyntaxShape::Filepath,
                 "Pre-select the items read from file",
+                None,
+            )
+            .named(
+                "pre-select",
+                SyntaxShape::Closure(Some(vec![])),
+                "Pre-select the items that match the predicate",
                 None,
             )
             .switch(
