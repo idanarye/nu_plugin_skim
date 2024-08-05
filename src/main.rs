@@ -57,7 +57,7 @@ impl PluginCommand for Sk {
                 )
                 .named(
                     "cmd",
-                    SyntaxShape::Closure(None),
+                    SyntaxShape::Closure(Some(vec![SyntaxShape::String])),
                     "Command to invoke dynamically. A closure that receives the command query as its argument",
                     Some('c'),
                 )
