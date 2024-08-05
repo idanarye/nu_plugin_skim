@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0](https://github.com/idanarye/nu_plugin_skim/compare/v0.3.0...v0.4.0) (2024-08-05)
+
+
+### Features
+
+* Add shortopts for `--format` (`-f`) and `--preview` (`-p`) ([e77e3e2](https://github.com/idanarye/nu_plugin_skim/commit/e77e3e21d8438f366dfd7a6afcb8f86203ec7230))
+* Add the `--pre-select` flag (Close [#5](https://github.com/idanarye/nu_plugin_skim/issues/5)) ([3c16d7c](https://github.com/idanarye/nu_plugin_skim/commit/3c16d7cd1a427f338182ad1865257fdc9a076f56))
+* Support interactive mode with `-i` and `-c` (Close [#4](https://github.com/idanarye/nu_plugin_skim/issues/4)) ([b81ee88](https://github.com/idanarye/nu_plugin_skim/commit/b81ee8892f54a6e18bd5d88890737b7194a736e2))
+
+
+### Bug Fixes
+
+* Set the signature of `--cmd` to accept one string parameter ([3cde093](https://github.com/idanarye/nu_plugin_skim/commit/3cde0937509c9c5eadab06efad3f592a1aee6a7b))
+
 ## [0.3.0](https://github.com/idanarye/nu_plugin_skim/compare/v0.2.0...v0.3.0) (2024-07-30)
 
 
