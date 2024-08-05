@@ -47,13 +47,13 @@ impl PluginCommand for Sk {
                     "format",
                     SyntaxShape::Closure(Some(vec![])),
                     "Modify the string to display",
-                    None,
+                    Some('f'),
                 )
                 .named(
                     "preview",
                     SyntaxShape::Closure(Some(vec![])),
                     "Generate a preview",
-                    None,
+                    Some('p'),
                 )
                 .named(
                     "cmd",
