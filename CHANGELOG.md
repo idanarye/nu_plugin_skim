@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.1](https://github.com/idanarye/nu_plugin_skim/compare/v0.4.0...v0.4.1) (2024-08-07)
+
+
+### Bug Fixes
+
+* Commit `Cargo.lock` to the repository (Fix [#10](https://github.com/idanarye/nu_plugin_skim/issues/10)) ([2e1739a](https://github.com/idanarye/nu_plugin_skim/commit/2e1739a3c036554341139e79e33497d19fff5712))
+
 ## [0.4.0](https://github.com/idanarye/nu_plugin_skim/compare/v0.3.0...v0.4.0) (2024-08-05)
 
 

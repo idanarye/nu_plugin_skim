@@ -1407,7 +1407,7 @@ dependencies = [
 
 [[package]]
 name = "nu_plugin_skim"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "nu-color-config",
  "nu-plugin",
