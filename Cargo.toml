@@ -1,6 +1,6 @@
 [package]
 name = "nu_plugin_skim"
-version = "0.4.0"
+version = "0.4.1"
 authors = ["Idan Arye <IdanArye@gmail.com>"]
 edition = "2021"
 description = "An `sk` command that can handle Nushell's structured data"
