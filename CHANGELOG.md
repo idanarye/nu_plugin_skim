@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0](https://github.com/idanarye/nu_plugin_skim/compare/v0.5.0...v0.6.0) (2024-09-18)
+
+
+### Features
+
+* Update Nu and two-percent versions ([8d3ebaf](https://github.com/idanarye/nu_plugin_skim/commit/8d3ebaf3afac5936f08f6283906a8b31576c8b15))
+
 ## [0.5.0](https://github.com/idanarye/nu_plugin_skim/compare/v0.4.1...v0.5.0) (2024-08-21)
 
 
