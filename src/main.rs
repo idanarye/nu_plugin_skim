@@ -65,7 +65,7 @@ impl PluginCommand for Sk {
         CliArguments::add_to_signature(signature)
     }
 
-    fn usage(&self) -> &str {
+    fn description(&self) -> &str {
         "Select a value using skim (a fuzzy finder written in Rust)"
     }
 

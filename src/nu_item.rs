@@ -1,9 +1,5 @@
-use nu_color_config::{StyleComputer, StyleMapping};
-use nu_protocol::{
-    engine::{EngineState, Stack},
-    Signals, Span, Value,
-};
-use nu_table::{ExpandedTable, TableOpts};
+use nu_plugin::EvaluatedCall;
+use nu_protocol::{PipelineData, ShellError, Span, Value};
 use skim::prelude::*;
 
 use crate::command_context::CommandContext;
@@ -22,28 +18,36 @@ impl SkimItem for NuItem {
             .into()
     }
 
-    fn preview(&self, context: PreviewContext) -> ItemPreview {
+    fn preview(&self, _context: PreviewContext) -> ItemPreview {
         let preview_result = self.context.preview.map(self);
-        let fake_engine_state = EngineState::default();
-        let fake_stack = Stack::default();
-        let style_computer =
-            StyleComputer::new(&fake_engine_state, &fake_stack, StyleMapping::default());
-        let table_opts = TableOpts::new(
-            &self.context.nu_config,
-            &style_computer,
-            &Signals::EMPTY, // TODO: actually send a signal when switching item? Is this necessary?
-            Span::new(0, 0), // TODO: figure the correct span?
-            context.width,
-            (
-                self.context.nu_config.table_indent.left,
-                self.context.nu_config.table_indent.right,
-            ),
-            self.context.nu_config.table_mode,
-            0,
-            true,
-        );
-        let (string_result, _) =
-            ExpandedTable::new(None, false, "".to_owned()).build_value(&preview_result, table_opts);
-        ItemPreview::AnsiText(string_result)
+        if let Ok(preview_result) = preview_result.coerce_string() {
+            return ItemPreview::AnsiText(preview_result);
+        }
+        let result = self
+            .context
+            .engine
+            .find_decl("table")
+            .and_then(|table_decl| {
+                let table_decl = table_decl.ok_or_else(|| ShellError::GenericError {
+                    error: "`table` decl is empty".to_owned(),
+                    msg: "`table` decl is empty".to_owned(),
+                    span: None,
+                    help: None,
+                    inner: vec![],
+                })?;
+                let as_table = self.context.engine.call_decl(
+                    table_decl,
+                    EvaluatedCall::new(Span::unknown()), // TODO: get the actual span
+                    PipelineData::Value((*preview_result).clone(), None),
+                    true,
+                    false,
+                )?;
+                let as_table_text = as_table.collect_string("\n", &self.context.nu_config)?;
+                Ok(as_table_text)
+            });
+        match result {
+            Ok(text) => ItemPreview::AnsiText(text),
+            Err(err) => ItemPreview::AnsiText(err.to_string()),
+        }
     }
 }
