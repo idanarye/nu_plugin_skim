@@ -1,5 +1,5 @@
 use nu_plugin::EvaluatedCall;
-use nu_protocol::{PipelineData, ShellError, Span, Value};
+use nu_protocol::{IntoSpanned, PipelineData, ShellError, Span, Value};
 use skim::prelude::*;
 
 use crate::command_context::CommandContext;
@@ -18,7 +18,7 @@ impl SkimItem for NuItem {
             .into()
     }
 
-    fn preview(&self, _context: PreviewContext) -> ItemPreview {
+    fn preview(&self, context: PreviewContext) -> ItemPreview {
         let preview_result = self.context.preview.map(self);
         if let Ok(preview_result) = preview_result.coerce_string() {
             return ItemPreview::AnsiText(preview_result);
@@ -37,7 +37,11 @@ impl SkimItem for NuItem {
                 })?;
                 let as_table = self.context.engine.call_decl(
                     table_decl,
-                    EvaluatedCall::new(Span::unknown()), // TODO: get the actual span
+                    // TODO: get the actual span
+                    EvaluatedCall::new(Span::unknown()).with_named(
+                        "width".into_spanned(Span::unknown()),
+                        Value::int(context.width as i64, Span::unknown()),
+                    ),
                     PipelineData::Value((*preview_result).clone(), None),
                     true,
                     false,
