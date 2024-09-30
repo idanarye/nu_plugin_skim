@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.0](https://github.com/idanarye/nu_plugin_skim/compare/v0.6.0...v0.7.0) (2024-09-30)
+
+
+### Features
+
+* Properly pass `--width` when invoking `table` in the preview window ([253cc7c](https://github.com/idanarye/nu_plugin_skim/commit/253cc7c7060f9c72cde4175f1c3d575819d40833))
+
+
+### Bug Fixes
+
+* Properly handle ANSI ([d400868](https://github.com/idanarye/nu_plugin_skim/commit/d4008680000f2614e855a02f254ef2ef1f45199a))
+
 ## [0.6.0](https://github.com/idanarye/nu_plugin_skim/compare/v0.5.0...v0.6.0) (2024-09-18)
 
 
