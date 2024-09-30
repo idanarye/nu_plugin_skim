@@ -9,13 +9,25 @@ pub struct NuItem {
     pub value: Value,
 }
 
+impl NuItem {
+    fn format_text(&self) -> AnsiString {
+        AnsiString::parse(
+            &self
+                .context
+                .format
+                .map(self)
+                .to_expanded_string(", ", &self.context.nu_config),
+        )
+    }
+}
+
 impl SkimItem for NuItem {
     fn text(&self) -> Cow<str> {
-        self.context
-            .format
-            .map(self)
-            .to_expanded_string(", ", &self.context.nu_config)
-            .into()
+        self.format_text().stripped().to_owned().into()
+    }
+
+    fn display(&self, _context: DisplayContext) -> AnsiString {
+        self.format_text()
     }
 
     fn preview(&self, context: PreviewContext) -> ItemPreview {
