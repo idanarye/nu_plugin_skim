@@ -129,9 +129,9 @@ impl CliArguments {
                     "skim_v1" => Ok(FuzzyAlgorithm::SkimV1),
                     "skim_v2" => Ok(FuzzyAlgorithm::SkimV2),
                     "clangd" => Ok(FuzzyAlgorithm::Clangd),
-                    _ => Err(ShellError::UnsupportedConfigValue {
-                        expected: "skim_v1|skim_v2|clangd".to_owned(),
-                        value: flag.to_owned(),
+                    _ => Err(ShellError::InvalidValue {
+                        valid: "[skim_v1|skim_v2|clangd]".to_owned(),
+                        actual: flag.to_owned(),
                         span: call
                             .get_flag_value("algo")
                             .expect("we already know the flag exists")
@@ -147,9 +147,9 @@ impl CliArguments {
                     "smart" => Ok(CaseMatching::Smart),
                     "ignore" => Ok(CaseMatching::Ignore),
                     "respect" => Ok(CaseMatching::Respect),
-                    _ => Err(ShellError::UnsupportedConfigValue {
-                        expected: "[smart|ignore|respect]".to_owned(),
-                        value: flag.to_owned(),
+                    _ => Err(ShellError::InvalidValue {
+                        valid: "[smart|ignore|respect]".to_owned(),
+                        actual: flag.to_owned(),
                         span: call
                             .get_flag_value("case")
                             .expect("we already know the flag exists")
