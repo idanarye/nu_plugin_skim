@@ -63,6 +63,7 @@ pub struct CliArguments {
 }
 
 impl CliArguments {
+    #[allow(clippy::result_large_err)]
     pub fn new(call: &EvaluatedCall, engine: &EngineInterface) -> Result<Self, LabeledError> {
         fn to_comma_separated_list(
             call: &EvaluatedCall,

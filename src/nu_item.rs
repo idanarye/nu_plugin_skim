@@ -7,31 +7,36 @@ use crate::command_context::CommandContext;
 pub struct NuItem {
     pub context: Arc<CommandContext>,
     pub value: Value,
+    pub display: AnsiString,
 }
 
 impl NuItem {
-    fn format_text(&self) -> AnsiString {
-        AnsiString::parse(
-            &self
-                .context
+    pub fn new(context: Arc<CommandContext>, value: Value) -> Self {
+        let display = AnsiString::parse(
+            &context
                 .format
-                .map(self)
-                .to_expanded_string(", ", &self.context.nu_config),
-        )
+                .map(&context, &value)
+                .to_expanded_string(", ", &context.nu_config),
+        );
+        Self {
+            context,
+            value,
+            display,
+        }
     }
 }
 
 impl SkimItem for NuItem {
     fn text(&self) -> Cow<str> {
-        self.format_text().stripped().to_owned().into()
+        self.display.stripped().to_owned().into()
     }
 
     fn display(&self, _context: DisplayContext) -> AnsiString {
-        self.format_text()
+        self.display.clone()
     }
 
     fn preview(&self, context: PreviewContext) -> ItemPreview {
-        let preview_result = self.context.preview.map(self);
+        let preview_result = self.context.preview.map(&self.context, &self.value);
         if let Ok(preview_result) = preview_result.coerce_string() {
             return ItemPreview::AnsiText(preview_result);
         }

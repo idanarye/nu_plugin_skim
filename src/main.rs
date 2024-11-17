@@ -118,10 +118,7 @@ impl PluginCommand for Sk {
                 std::thread::spawn(move || {
                     for entry in input.into_iter() {
                         if sender
-                            .send(Arc::new(NuItem {
-                                value: entry,
-                                context: command_context.clone(),
-                            }))
+                            .send(Arc::new(NuItem::new(command_context.clone(), entry)))
                             .is_err()
                         {
                             // Assuming the receiver was closed because the user picked an item
@@ -139,13 +136,13 @@ impl PluginCommand for Sk {
                 std::thread::spawn(move || {
                     for line in lines {
                         if sender
-                            .send(Arc::new(NuItem {
-                                value: match line {
+                            .send(Arc::new(NuItem::new(
+                                command_context.clone(),
+                                match line {
                                     Ok(text) => Value::string(text, span),
                                     Err(err) => Value::error(err, span),
                                 },
-                                context: command_context.clone(),
-                            }))
+                            )))
                             .is_err()
                         {
                             // Assuming the receiver was closed because the user picked an item

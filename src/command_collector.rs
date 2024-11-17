@@ -49,14 +49,14 @@ impl CommandCollector for NuCommandCollector {
                                     break;
                                 }
                                 let send_result = match line {
-                                    Ok(line) => tx.try_send(Arc::new(NuItem {
-                                        context: context.clone(),
-                                        value: Value::string(line, span),
-                                    })),
-                                    Err(err) => tx.try_send(Arc::new(NuItem {
-                                        context: context.clone(),
-                                        value: Value::error(err, span),
-                                    })),
+                                    Ok(line) => tx.try_send(Arc::new(NuItem::new(
+                                        context.clone(),
+                                        Value::string(line, span),
+                                    ))),
+                                    Err(err) => tx.try_send(Arc::new(NuItem::new(
+                                        context.clone(),
+                                        Value::error(err, span),
+                                    ))),
                                 };
                                 if send_result.is_err() {
                                     break;
@@ -69,20 +69,18 @@ impl CommandCollector for NuCommandCollector {
                             if rx_interrupt.try_recv().is_ok() {
                                 break;
                             }
-                            let send_result = tx.try_send(Arc::new(NuItem {
-                                context: context.clone(),
-                                value,
-                            }));
+                            let send_result =
+                                tx.try_send(Arc::new(NuItem::new(context.clone(), value)));
                             if send_result.is_err() {
                                 break;
                             }
                         }
                     }
                     Err(err) => {
-                        let _ = tx.try_send(Arc::new(NuItem {
-                            context: context.clone(),
-                            value: Value::error(err, Span::unknown()),
-                        }));
+                        let _ = tx.try_send(Arc::new(NuItem::new(
+                            context.clone(),
+                            Value::error(err, Span::unknown()),
+                        )));
                     }
                 }
 

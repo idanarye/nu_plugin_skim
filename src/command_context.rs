@@ -5,8 +5,6 @@ use nu_protocol::{
     engine::Closure, IntoSpanned, LabeledError, PipelineData, ShellError, Spanned, Value,
 };
 
-use crate::nu_item::NuItem;
-
 pub struct CommandContext {
     pub engine: EngineInterface,
     pub nu_config: Arc<nu_protocol::Config>,
@@ -15,6 +13,7 @@ pub struct CommandContext {
 }
 
 impl CommandContext {
+    #[allow(clippy::result_large_err)]
     pub fn new(engine: &EngineInterface) -> Result<Self, LabeledError> {
         Ok(Self {
             engine: engine.clone(),
@@ -50,14 +49,14 @@ impl TryFrom<Value> for MapperFlag {
 }
 
 impl MapperFlag {
-    pub fn map<'a>(&self, item: &'a NuItem) -> Cow<'a, Value> {
+    pub fn map<'a>(&self, context: &CommandContext, value: &'a Value) -> Cow<'a, Value> {
         match self {
-            MapperFlag::None => Cow::Borrowed(&item.value),
+            MapperFlag::None => Cow::Borrowed(value),
             MapperFlag::Closure(closure) => Cow::Owned(
-                match item.context.engine.eval_closure_with_stream(
+                match context.engine.eval_closure_with_stream(
                     closure,
                     vec![],
-                    PipelineData::Value(item.value.clone(), None),
+                    PipelineData::Value(value.clone(), None),
                     true,
                     true,
                 ) {
