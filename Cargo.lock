@@ -1873,8 +1873,9 @@ checksum = "1de1d4f81173b03af4c0cbed3c898f6bff5b870e4a7f5d6f4057d62a7a4b686e"
 
 [[package]]
 name = "skim"
-version = "0.12.0"
-source = "git+https://github.com/skim-rs/skim.git?branch=fix/cmd-collector-in-options#3d2c0eaa274cd42655ec895da2aa69ab1e85f2bd"
+version = "0.13.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c23ac3ed9612dd1853e148339ad8446e4fa139093c2f04f79f70737d7249671a"
 dependencies = [
  "atty",
  "beef",
