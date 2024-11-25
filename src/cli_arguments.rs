@@ -2,14 +2,17 @@ use std::{
     fs::File,
     io::{BufRead, BufReader},
     path::PathBuf,
-    sync::Arc,
+    rc::Rc,
 };
 
+use clap::ValueEnum;
 use nu_plugin::{EngineInterface, EvaluatedCall};
 use nu_protocol::{
-    engine::Closure, LabeledError, Record, ShellError, Signature, Spanned, SyntaxShape, Value,
+    engine::Closure, LabeledError, Record, ShellError, Signature, Spanned, SyntaxShape,
 };
-use skim::{prelude::DefaultSkimSelector, CaseMatching, FuzzyAlgorithm, Selector, SkimOptions};
+use skim::{
+    prelude::DefaultSkimSelector, CaseMatching, FuzzyAlgorithm, RankCriteria, Selector, SkimOptions,
+};
 
 use crate::predicate_based_selector::{CombinedSelector, PredicateBasedSelector};
 
@@ -21,7 +24,7 @@ pub struct CliArguments {
     expect: Vec<String>,
     tac: bool,
     no_sort: bool,
-    tiebreak: Option<String>,
+    tiebreak: Vec<RankCriteria>,
     exact: bool,
     //cmd: Option<Closure>,
     interactive: bool,
@@ -58,32 +61,13 @@ pub struct CliArguments {
     select1: bool,
     exit0: bool,
     sync: bool,
-    selector: Option<Arc<dyn Selector>>,
+    selector: Option<Rc<dyn Selector>>,
     no_clear_if_empty: bool,
 }
 
 impl CliArguments {
     #[allow(clippy::result_large_err)]
     pub fn new(call: &EvaluatedCall, engine: &EngineInterface) -> Result<Self, LabeledError> {
-        fn to_comma_separated_list(
-            call: &EvaluatedCall,
-            flag_name: &str,
-        ) -> Result<Option<String>, LabeledError> {
-            if let Some(flag_value) = call.get_flag::<Vec<Value>>(flag_name)? {
-                let mut result = String::new();
-                for key in flag_value.iter() {
-                    let key = key.coerce_str()?;
-                    if !result.is_empty() {
-                        result.push(',');
-                    }
-                    result.push_str(&key);
-                }
-                Ok(Some(result))
-            } else {
-                Ok(None)
-            }
-        }
-
         Ok(Self {
             bind: if let Some(bind) = call.get_flag::<Record>("bind")? {
                 bind.iter()
@@ -101,7 +85,24 @@ impl CliArguments {
             expect: call.get_flag("expect")?.unwrap_or_default(),
             tac: call.has_flag("tac")?,
             no_sort: call.has_flag("no-sort")?,
-            tiebreak: call.get_flag("tiebreak")?.unwrap_or_default(),
+            tiebreak: call
+                .get_flag::<Vec<Spanned<String>>>("tiebreak")?
+                .unwrap_or_default()
+                .into_iter()
+                .map(|flag| {
+                    RankCriteria::from_str(&flag.item, true).map_err(|_| {
+                        let possible_values = RankCriteria::value_variants()
+                            .iter()
+                            .flat_map(|v| Some(format!("`{}`", v.to_possible_value()?.get_name())))
+                            .collect::<Vec<_>>()
+                            .join("/");
+                        LabeledError::new(format!(
+                            "Invalid tiebreak - legal options are {possible_values}"
+                        ))
+                        .with_label("here", flag.span)
+                    })
+                })
+                .collect::<Result<Vec<_>, _>>()?,
             exact: call.has_flag("exact")?,
             interactive: call.has_flag("interactive")?,
             query: call.get_flag("query")?,
@@ -166,7 +167,6 @@ impl CliArguments {
             sync: call.has_flag("sync")?,
             selector: {
                 let mut dumb_selector: Option<DefaultSkimSelector> = None;
-                // dumb_selector.get_or_insert_with(Default::default);
                 if let Some(n) = call.get_flag::<usize>("pre-select-n")? {
                     dumb_selector = Some(dumb_selector.take().unwrap_or_default().first_n(n));
                 }
@@ -192,15 +192,15 @@ impl CliArguments {
                         predicate,
                     };
                     if let Some(dumb_selector) = dumb_selector {
-                        Some(Arc::new(CombinedSelector(
+                        Some(Rc::new(CombinedSelector(
                             dumb_selector,
                             predicate_based_selector,
                         )))
                     } else {
-                        Some(Arc::new(predicate_based_selector))
+                        Some(Rc::new(predicate_based_selector))
                     }
                 } else if let Some(dumb_selector) = dumb_selector {
-                    Some(Arc::new(dumb_selector))
+                    Some(Rc::new(dumb_selector))
                 } else {
                     None
                 }
@@ -449,7 +449,7 @@ impl CliArguments {
             no_sort: *nosort,
             // TODO: Get Skim to export RankCriteria and move the conversion to somewhere that can
             // return a failure
-            // tiebreak: tiebreak.clone(),
+            tiebreak: tiebreak.clone(),
             exact: *exact,
             //cmd: cmd.is_some().then(|| "ls"),
             cmd: Some("ls".to_owned()),
@@ -495,8 +495,18 @@ impl CliArguments {
             select_1: *select_1,
             exit_0: *exit_0,
             sync: *sync,
-            // TODO: Get Skim to add the selector option back
-            //selector: selector.clone(),
+            // selector: selector.clone(),
+            selector: {
+                struct S;
+
+                // Note
+                impl Selector for S {
+                    fn should_select(&self, _: usize, _: &dyn skim::SkimItem) -> bool {
+                        true
+                    }
+                }
+                Some(Rc::new(S))
+            },
             no_clear_if_empty: *no_clear_if_empty,
             ..Default::default()
         }
