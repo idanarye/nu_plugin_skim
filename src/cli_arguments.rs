@@ -377,7 +377,7 @@ impl CliArguments {
             .named(
                 "pre-select-items",
                 SyntaxShape::List(Box::new(SyntaxShape::String)),
-                "Pre-select the items separated by newline character",
+                "Pre-select the items in the given list",
                 None,
             )
             .named(
@@ -447,11 +447,8 @@ impl CliArguments {
             expect: expect.clone(),
             tac: *tac,
             no_sort: *nosort,
-            // TODO: Get Skim to export RankCriteria and move the conversion to somewhere that can
-            // return a failure
             tiebreak: tiebreak.clone(),
             exact: *exact,
-            //cmd: cmd.is_some().then(|| "ls"),
             cmd: Some("ls".to_owned()),
             interactive: *interactive,
             query: query.clone(),
@@ -478,35 +475,12 @@ impl CliArguments {
             .to_owned(),
             algorithm: *algorithm,
             case: *case,
-            // cmd_collector: if let Some(cmd) = cmd {
-            // use std::fs;
-            // use std::io::Write;
-            // let mut file = fs::File::options().create(true).append(true).open("/tmp/sklog.log").unwrap();
-            // writeln!(&mut file, "Creating it").unwrap();
-            // Rc::new(RefCell::new(NuCommandCollector {
-            // context,
-            // closure: cmd.clone(),
-            // }))
-            // } else {
-            // Rc::new(RefCell::new(SkimItemReader::default()))
-            // },
             keep_right: *keep_right,
             skip_to_pattern: skip_to_pattern.clone(),
             select_1: *select_1,
             exit_0: *exit_0,
             sync: *sync,
-            // selector: selector.clone(),
-            selector: {
-                struct S;
-
-                // Note
-                impl Selector for S {
-                    fn should_select(&self, _: usize, _: &dyn skim::SkimItem) -> bool {
-                        true
-                    }
-                }
-                Some(Rc::new(S))
-            },
+            selector: selector.clone(),
             no_clear_if_empty: *no_clear_if_empty,
             ..Default::default()
         }
