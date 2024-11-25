@@ -90,7 +90,7 @@ impl PluginCommand for Sk {
 
         if let Some(preview) = call.get_flag_value("preview") {
             command_context.preview = preview.try_into()?;
-            skim_options.preview = Some("");
+            skim_options.preview = Some("".to_owned());
         }
 
         let command_context = Arc::new(command_context);
@@ -99,7 +99,7 @@ impl PluginCommand for Sk {
             // This is a hack to make Skim conjure what it thinks is the actual command but is
             // actually just the query, which will be sent to as the `cmd` argument to
             // `NuCommandCollector.invoke`.
-            skim_options.cmd = Some("{}");
+            skim_options.cmd = Some("{}".to_owned());
             skim_options.cmd_collector = Rc::new(RefCell::new(NuCommandCollector {
                 context: command_context.clone(),
                 closure,
@@ -169,7 +169,7 @@ impl PluginCommand for Sk {
                 .value
                 .clone()
         });
-        if skim_options.expect.is_none() {
+        if skim_options.expect.is_empty() {
             if skim_options.multi {
                 Ok(PipelineData::ListStream(
                     ListStream::new(result, span, Signals::EMPTY),

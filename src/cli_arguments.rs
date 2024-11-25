@@ -2,14 +2,17 @@ use std::{
     fs::File,
     io::{BufRead, BufReader},
     path::PathBuf,
-    sync::Arc,
+    rc::Rc,
 };
 
+use clap::ValueEnum;
 use nu_plugin::{EngineInterface, EvaluatedCall};
 use nu_protocol::{
-    engine::Closure, LabeledError, Record, ShellError, Signature, Spanned, SyntaxShape, Value,
+    engine::Closure, LabeledError, Record, ShellError, Signature, Spanned, SyntaxShape,
 };
-use skim::{prelude::DefaultSkimSelector, CaseMatching, FuzzyAlgorithm, Selector, SkimOptions};
+use skim::{
+    prelude::DefaultSkimSelector, CaseMatching, FuzzyAlgorithm, RankCriteria, Selector, SkimOptions,
+};
 
 use crate::predicate_based_selector::{CombinedSelector, PredicateBasedSelector};
 
@@ -18,10 +21,10 @@ pub struct CliArguments {
     multi: bool,
     prompt: Option<String>,
     cmd_prompt: Option<String>,
-    expect: Option<String>,
+    expect: Vec<String>,
     tac: bool,
-    nosort: bool,
-    tiebreak: Option<String>,
+    no_sort: bool,
+    tiebreak: Vec<RankCriteria>,
     exact: bool,
     //cmd: Option<Closure>,
     interactive: bool,
@@ -40,7 +43,7 @@ pub struct CliArguments {
     //preview: Option<String>,
     preview_window: Option<String>,
     reverse: bool, // note that this does not (just) get paseed to CliArguments as is - it's there to modify --layout
-    tabstop: Option<String>,
+    tabstop: Option<usize>,
     no_hscroll: bool,
     no_mouse: bool,
     inline_info: bool,
@@ -58,32 +61,13 @@ pub struct CliArguments {
     select1: bool,
     exit0: bool,
     sync: bool,
-    selector: Option<Arc<dyn Selector>>,
+    selector: Option<Rc<dyn Selector>>,
     no_clear_if_empty: bool,
 }
 
 impl CliArguments {
     #[allow(clippy::result_large_err)]
     pub fn new(call: &EvaluatedCall, engine: &EngineInterface) -> Result<Self, LabeledError> {
-        fn to_comma_separated_list(
-            call: &EvaluatedCall,
-            flag_name: &str,
-        ) -> Result<Option<String>, LabeledError> {
-            if let Some(flag_value) = call.get_flag::<Vec<Value>>(flag_name)? {
-                let mut result = String::new();
-                for key in flag_value.iter() {
-                    let key = key.coerce_str()?;
-                    if !result.is_empty() {
-                        result.push(',');
-                    }
-                    result.push_str(&key);
-                }
-                Ok(Some(result))
-            } else {
-                Ok(None)
-            }
-        }
-
         Ok(Self {
             bind: if let Some(bind) = call.get_flag::<Record>("bind")? {
                 bind.iter()
@@ -98,10 +82,27 @@ impl CliArguments {
             multi: call.has_flag("multi")?,
             prompt: call.get_flag("prompt")?,
             cmd_prompt: call.get_flag("cmd-prompt")?,
-            expect: to_comma_separated_list(call, "expect")?,
+            expect: call.get_flag("expect")?.unwrap_or_default(),
             tac: call.has_flag("tac")?,
-            nosort: call.has_flag("no-sort")?,
-            tiebreak: to_comma_separated_list(call, "tiebreak")?,
+            no_sort: call.has_flag("no-sort")?,
+            tiebreak: call
+                .get_flag::<Vec<Spanned<String>>>("tiebreak")?
+                .unwrap_or_default()
+                .into_iter()
+                .map(|flag| {
+                    RankCriteria::from_str(&flag.item, true).map_err(|_| {
+                        let possible_values = RankCriteria::value_variants()
+                            .iter()
+                            .flat_map(|v| Some(format!("`{}`", v.to_possible_value()?.get_name())))
+                            .collect::<Vec<_>>()
+                            .join("/");
+                        LabeledError::new(format!(
+                            "Invalid tiebreak - legal options are {possible_values}"
+                        ))
+                        .with_label("here", flag.span)
+                    })
+                })
+                .collect::<Result<Vec<_>, _>>()?,
             exact: call.has_flag("exact")?,
             interactive: call.has_flag("interactive")?,
             query: call.get_flag("query")?,
@@ -118,7 +119,7 @@ impl CliArguments {
             height: call.get_flag("height")?,
             preview_window: call.get_flag("preview-window")?,
             reverse: call.has_flag("reverse")?,
-            tabstop: call.get_flag::<i64>("tabstop")?.map(|num| num.to_string()),
+            tabstop: call.get_flag::<usize>("tabstop")?,
             no_hscroll: call.has_flag("no-hscroll")?,
             no_mouse: call.has_flag("no-mouse")?,
             inline_info: call.has_flag("inline-info")?,
@@ -166,7 +167,6 @@ impl CliArguments {
             sync: call.has_flag("sync")?,
             selector: {
                 let mut dumb_selector: Option<DefaultSkimSelector> = None;
-                // dumb_selector.get_or_insert_with(Default::default);
                 if let Some(n) = call.get_flag::<usize>("pre-select-n")? {
                     dumb_selector = Some(dumb_selector.take().unwrap_or_default().first_n(n));
                 }
@@ -192,15 +192,15 @@ impl CliArguments {
                         predicate,
                     };
                     if let Some(dumb_selector) = dumb_selector {
-                        Some(Arc::new(CombinedSelector(
+                        Some(Rc::new(CombinedSelector(
                             dumb_selector,
                             predicate_based_selector,
                         )))
                     } else {
-                        Some(Arc::new(predicate_based_selector))
+                        Some(Rc::new(predicate_based_selector))
                     }
                 } else if let Some(dumb_selector) = dumb_selector {
-                    Some(Arc::new(dumb_selector))
+                    Some(Rc::new(dumb_selector))
                 } else {
                     None
                 }
@@ -377,7 +377,7 @@ impl CliArguments {
             .named(
                 "pre-select-items",
                 SyntaxShape::List(Box::new(SyntaxShape::String)),
-                "Pre-select the items separated by newline character",
+                "Pre-select the items in the given list",
                 None,
             )
             .named(
@@ -407,7 +407,7 @@ impl CliArguments {
             cmd_prompt,
             expect,
             tac,
-            nosort,
+            no_sort: nosort,
             tiebreak,
             exact,
             interactive,
@@ -432,39 +432,38 @@ impl CliArguments {
             case,
             keep_right,
             skip_to_pattern,
-            select1,
-            exit0,
+            select1: select_1,
+            exit0: exit_0,
             sync,
             selector,
             no_clear_if_empty,
         } = self;
 
         SkimOptions {
-            bind: bind.iter().map(|b| b.as_str()).collect(),
+            bind: bind.clone(),
             multi: *multi,
-            prompt: prompt.as_deref(),
-            cmd_prompt: cmd_prompt.as_deref(),
+            prompt: prompt.as_deref().unwrap_or_default().to_owned(),
+            cmd_prompt: cmd_prompt.as_deref().unwrap_or_default().to_owned(),
             expect: expect.clone(),
             tac: *tac,
-            nosort: *nosort,
+            no_sort: *nosort,
             tiebreak: tiebreak.clone(),
             exact: *exact,
-            //cmd: cmd.is_some().then(|| "ls"),
-            cmd: Some("ls"),
+            cmd: Some("ls".to_owned()),
             interactive: *interactive,
-            query: query.as_deref(),
-            cmd_query: cmd_query.as_deref(),
+            query: query.clone(),
+            cmd_query: cmd_query.clone(),
             regex: *regex,
-            color: color.as_deref(),
-            margin: margin.as_deref().or(Some("0,0,0,0")),
+            color: color.clone(),
+            margin: margin.as_deref().unwrap_or("0,0,0,0").to_owned(),
             no_height: *no_height,
             no_clear: *no_clear,
             no_clear_start: *no_clear_start,
-            min_height: min_height.as_deref().or(Some("10")),
-            height: height.as_deref().or(Some("100%")),
-            preview_window: preview_window.as_deref().or(Some("right:50%")),
+            min_height: min_height.as_deref().unwrap_or("10").to_owned(),
+            height: height.as_deref().unwrap_or("100%").to_owned(),
+            preview_window: preview_window.as_deref().unwrap_or("right:50%").to_owned(),
             reverse: *reverse,
-            tabstop: tabstop.as_deref(),
+            tabstop: tabstop.unwrap_or(8),
             no_hscroll: *no_hscroll,
             no_mouse: *no_mouse,
             inline_info: *inline_info,
@@ -472,25 +471,14 @@ impl CliArguments {
                 "reverse"
             } else {
                 layout.as_deref().unwrap_or("default")
-            },
+            }
+            .to_owned(),
             algorithm: *algorithm,
             case: *case,
-            // cmd_collector: if let Some(cmd) = cmd {
-            // use std::fs;
-            // use std::io::Write;
-            // let mut file = fs::File::options().create(true).append(true).open("/tmp/sklog.log").unwrap();
-            // writeln!(&mut file, "Creating it").unwrap();
-            // Rc::new(RefCell::new(NuCommandCollector {
-            // context,
-            // closure: cmd.clone(),
-            // }))
-            // } else {
-            // Rc::new(RefCell::new(SkimItemReader::default()))
-            // },
             keep_right: *keep_right,
-            skip_to_pattern: skip_to_pattern.as_deref().unwrap_or(""),
-            select1: *select1,
-            exit0: *exit0,
+            skip_to_pattern: skip_to_pattern.clone(),
+            select_1: *select_1,
+            exit_0: *exit_0,
             sync: *sync,
             selector: selector.clone(),
             no_clear_if_empty: *no_clear_if_empty,

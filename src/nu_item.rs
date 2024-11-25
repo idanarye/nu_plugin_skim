@@ -7,7 +7,7 @@ use crate::command_context::CommandContext;
 pub struct NuItem {
     pub context: Arc<CommandContext>,
     pub value: Value,
-    pub display: AnsiString,
+    pub display: AnsiString<'static>,
 }
 
 impl NuItem {
