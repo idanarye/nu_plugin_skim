@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.11.1](https://github.com/idanarye/nu_plugin_skim/compare/v0.11.0...v0.11.1) (2024-12-23)
+
+
+### Bug Fixes
+
+* Downgrade skim back to 0.13 to fix multiselect ([a7bccd2](https://github.com/idanarye/nu_plugin_skim/commit/a7bccd242c57f4fcdde0d0b1a6134047b644c2e7))
+
 ## [0.11.0](https://github.com/idanarye/nu_plugin_skim/compare/v0.10.0...v0.11.0) (2024-12-23)
 
 
