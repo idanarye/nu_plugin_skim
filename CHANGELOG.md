@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.17.0](https://github.com/idanarye/nu_plugin_skim/compare/v0.16.0...v0.17.0) (2025-08-26)
+
+
+### Features
+
+* Upgrade skim to 0.20 ([4bdaca1](https://github.com/idanarye/nu_plugin_skim/commit/4bdaca17b72c4036be8fbeb5a688a7fa9bb44c0c))
+
+
+### Bug Fixes
+
+* color highlight ([4d28af4](https://github.com/idanarye/nu_plugin_skim/commit/4d28af4b497ce075f6f9821da391bf2e9f148ca2))
+* color highlight ([a0391bc](https://github.com/idanarye/nu_plugin_skim/commit/a0391bc5ef0d95466bbf495a0544927820e09182))
+
 ## [0.16.0](https://github.com/idanarye/nu_plugin_skim/compare/v0.15.0...v0.16.0) (2025-07-26)
 
 
