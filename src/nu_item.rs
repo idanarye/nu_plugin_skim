@@ -31,8 +31,10 @@ impl SkimItem for NuItem {
         self.display.stripped().to_owned().into()
     }
 
-    fn display(&self, _context: DisplayContext) -> AnsiString {
-        self.display.clone()
+    fn display<'a>(&'a self, context: DisplayContext<'a>) -> AnsiString<'a> {
+        // Ensure highlight visibility identical to skim: build from DisplayContext.
+        // This uses skim's theme (including --color) for both current and matched segments.
+        context.into()
     }
 
     fn preview(&self, context: PreviewContext) -> ItemPreview {
