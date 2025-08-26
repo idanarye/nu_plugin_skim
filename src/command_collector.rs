@@ -38,16 +38,18 @@ impl CommandCollector for NuCommandCollector {
                 Ok(PipelineData::ByteStream(stream, _)) => {
                     let span = stream.span();
                     if let Some(lines) = stream.lines() {
-                        for line in lines {
+                        for (index, line) in lines.enumerate() {
                             if rx_interrupt.try_recv().is_ok() {
                                 break;
                             }
                             let send_result = match line {
                                 Ok(line) => tx.try_send(Arc::new(NuItem::new(
+                                    index,
                                     context.clone(),
                                     Value::string(line, span),
                                 ))),
                                 Err(err) => tx.try_send(Arc::new(NuItem::new(
+                                    index,
                                     context.clone(),
                                     Value::error(err, span),
                                 ))),
@@ -59,12 +61,12 @@ impl CommandCollector for NuCommandCollector {
                     }
                 }
                 Ok(stream) => {
-                    for value in stream {
+                    for (index, value) in stream.into_iter().enumerate() {
                         if rx_interrupt.try_recv().is_ok() {
                             break;
                         }
                         let send_result =
-                            tx.try_send(Arc::new(NuItem::new(context.clone(), value)));
+                            tx.try_send(Arc::new(NuItem::new(index, context.clone(), value)));
                         if send_result.is_err() {
                             break;
                         }
@@ -72,6 +74,7 @@ impl CommandCollector for NuCommandCollector {
                 }
                 Err(err) => {
                     let _ = tx.try_send(Arc::new(NuItem::new(
+                        0,
                         context.clone(),
                         Value::error(err, Span::unknown()),
                     )));

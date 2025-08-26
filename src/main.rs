@@ -116,9 +116,9 @@ impl PluginCommand for Sk {
             PipelineData::Value(_, _) | PipelineData::ListStream(_, _) => {
                 let (sender, receiver) = unbounded::<Arc<dyn SkimItem>>();
                 std::thread::spawn(move || {
-                    for entry in input.into_iter() {
+                    for (index, entry) in input.into_iter().enumerate() {
                         if sender
-                            .send(Arc::new(NuItem::new(command_context.clone(), entry)))
+                            .send(Arc::new(NuItem::new(index, command_context.clone(), entry)))
                             .is_err()
                         {
                             // Assuming the receiver was closed because the user picked an item
@@ -134,9 +134,10 @@ impl PluginCommand for Sk {
                 };
                 let (sender, receiver) = unbounded::<Arc<dyn SkimItem>>();
                 std::thread::spawn(move || {
-                    for line in lines {
+                    for (index, line) in lines.enumerate() {
                         if sender
                             .send(Arc::new(NuItem::new(
+                                index,
                                 command_context.clone(),
                                 match line {
                                     Ok(text) => Value::string(text, span),

@@ -439,9 +439,12 @@ impl CliArguments {
             no_clear_if_empty,
         } = self;
 
+        let default_options = SkimOptions::default();
+
         SkimOptions {
             bind: bind.clone(),
             multi: *multi,
+            no_multi: !*multi,
             prompt: prompt.as_deref().unwrap_or_default().to_owned(),
             cmd_prompt: cmd_prompt.as_deref().unwrap_or_default().to_owned(),
             expect: expect.clone(),
@@ -482,7 +485,57 @@ impl CliArguments {
             sync: *sync,
             selector: selector.clone(),
             no_clear_if_empty: *no_clear_if_empty,
-            ..Default::default()
+
+            // Use these instead of Default::default so that when they add new options the compiler
+            // will point them out.
+
+            // These are options that should not be implemented because it works differently in
+            // Nushell
+            preview: default_options.preview,
+            pre_select_n: default_options.pre_select_n,
+            pre_select_pat: default_options.pre_select_pat,
+            pre_select_items: default_options.pre_select_items,
+            pre_select_file: default_options.pre_select_file,
+            cmd_collector: default_options.cmd_collector,
+            shell: default_options.shell,
+            nth: default_options.nth,
+            delimiter: default_options.delimiter,
+            read0: default_options.read0,
+            print0: default_options.print0,
+
+            // These options still need to be considered
+            min_query_length: default_options.min_query_length,
+            with_nth: default_options.with_nth,
+            replstr: default_options.replstr,
+            show_cmd_error: default_options.show_cmd_error,
+            ansi: default_options.ansi,
+            info: default_options.info,
+            no_info: default_options.no_info,
+            header: default_options.header,
+            header_lines: default_options.header_lines,
+            history_file: default_options.history_file,
+            history_size: default_options.history_size,
+            cmd_history_file: default_options.cmd_history_file,
+            cmd_history_size: default_options.cmd_history_size,
+            print_query: default_options.print_query,
+            print_cmd: default_options.print_cmd,
+            print_score: default_options.print_score,
+            filter: default_options.filter,
+            tmux: default_options.tmux,
+            extended: default_options.extended,
+            literal: default_options.literal,
+            cycle: default_options.cycle,
+            hscroll_off: default_options.hscroll_off,
+            filepath_word: default_options.filepath_word,
+            jump_labels: default_options.jump_labels,
+            border: default_options.border,
+            no_bold: default_options.no_bold,
+            pointer: default_options.pointer,
+            marker: default_options.marker,
+            phony: default_options.phony,
+            query_history: default_options.query_history,
+            cmd_history: default_options.cmd_history,
+            preview_fn: default_options.preview_fn,
         }
     }
 }
