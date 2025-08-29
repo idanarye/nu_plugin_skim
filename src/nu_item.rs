@@ -29,7 +29,7 @@ impl NuItem {
 }
 
 impl SkimItem for NuItem {
-    fn text(&self) -> Cow<str> {
+    fn text(&self) -> Cow<'_, str> {
         self.display.stripped().to_owned().into()
     }
 
