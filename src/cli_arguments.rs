@@ -6,15 +6,15 @@ use std::{
 };
 
 use clap::ValueEnum;
-use std::env;
-use shlex::Shlex;
 use nu_plugin::{EngineInterface, EvaluatedCall};
 use nu_protocol::{
     engine::Closure, LabeledError, Record, ShellError, Signature, Spanned, SyntaxShape,
 };
+use shlex::Shlex;
 use skim::{
     prelude::DefaultSkimSelector, CaseMatching, FuzzyAlgorithm, RankCriteria, Selector, SkimOptions,
 };
+use std::env;
 
 use crate::predicate_based_selector::{CombinedSelector, PredicateBasedSelector};
 
@@ -99,7 +99,9 @@ impl CliArguments {
                         RankCriteria::from_str(&flag.item, true).map_err(|_| {
                             let possible_values = RankCriteria::value_variants()
                                 .iter()
-                                .flat_map(|v| Some(format!("`{}`", v.to_possible_value()?.get_name())))
+                                .flat_map(|v| {
+                                    Some(format!("`{}`", v.to_possible_value()?.get_name()))
+                                })
                                 .collect::<Vec<_>>()
                                 .join("/");
                             LabeledError::new(format!(
@@ -178,7 +180,9 @@ impl CliArguments {
                 .transpose()?
                 .unwrap_or(env_defaults.case.unwrap_or_default()),
             keep_right: call.has_flag("keep-right")? || env_defaults.keep_right.unwrap_or(false),
-            skip_to_pattern: call.get_flag("skip-to-pattern")?.or(env_defaults.skip_to_pattern),
+            skip_to_pattern: call
+                .get_flag("skip-to-pattern")?
+                .or(env_defaults.skip_to_pattern),
             select1: call.has_flag("select-1")? || env_defaults.select1.unwrap_or(false),
             exit0: call.has_flag("exit-0")? || env_defaults.exit0.unwrap_or(false),
             sync: call.has_flag("sync")? || env_defaults.sync.unwrap_or(false),
@@ -211,15 +215,18 @@ impl CliArguments {
                         dumb_selector = Some(dumb_selector.take().unwrap_or_default().regex(&pat));
                     }
                     if let Some(items) = env_defaults.pre_select_items {
-                        dumb_selector = Some(dumb_selector.take().unwrap_or_default().preset(items));
+                        dumb_selector =
+                            Some(dumb_selector.take().unwrap_or_default().preset(items));
                     }
                     if let Some(file_path) = env_defaults.pre_select_file {
-                        let file = File::open(file_path).map_err(|e| LabeledError::new(e.to_string()))?;
+                        let file =
+                            File::open(file_path).map_err(|e| LabeledError::new(e.to_string()))?;
                         let items = BufReader::new(file)
                             .lines()
                             .collect::<Result<Vec<String>, _>>()
                             .map_err(|e| LabeledError::new(e.to_string()))?;
-                        dumb_selector = Some(dumb_selector.take().unwrap_or_default().preset(items));
+                        dumb_selector =
+                            Some(dumb_selector.take().unwrap_or_default().preset(items));
                     }
                 }
                 if let Some(predicate) = call.get_flag::<Spanned<Closure>>("pre-select")? {
@@ -622,21 +629,31 @@ struct EnvDefaults {
 
 impl EnvDefaults {
     fn from_env() -> Self {
-        let Ok(raw) = env::var("SKIM_DEFAULT_OPTIONS") else { return Self::default(); };
+        let Ok(raw) = env::var("SKIM_DEFAULT_OPTIONS") else {
+            return Self::default();
+        };
         Self::from_options_str(&raw)
     }
 
     fn from_options_str(s: &str) -> Self {
         let mut out = EnvDefaults::default();
-        let mut it = Shlex::new(s).collect::<Vec<String>>().into_iter().peekable();
+        let mut it = Shlex::new(s)
+            .collect::<Vec<String>>()
+            .into_iter()
+            .peekable();
 
         while let Some(tok) = it.next() {
-            if tok == "--" { break; }
-            if tok.starts_with("--") {
-                let (key, val_opt) = if let Some(eq_idx) = tok.find('=') {
-                    (tok[2..eq_idx].to_string(), Some(tok[eq_idx + 1..].to_string()))
+            if tok == "--" {
+                break;
+            }
+            if let Some(rest) = tok.strip_prefix("--") {
+                let (key, val_opt) = if let Some(eq_idx) = rest.find('=') {
+                    (
+                        rest[..eq_idx].to_string(),
+                        Some(rest[eq_idx + 1..].to_string()),
+                    )
                 } else {
-                    (tok[2..].to_string(), None)
+                    (rest.to_string(), None)
                 };
                 match key.as_str() {
                     // boolean switches
@@ -660,60 +677,142 @@ impl EnvDefaults {
                     "no-clear-if-empty" => out.no_clear_if_empty = Some(true),
 
                     // string/numeric options
-                    "prompt" => { if let Some(v) = set_string(val_opt, &mut it) { out.prompt = Some(v); } }
-                    "cmd-prompt" => { if let Some(v) = set_string(val_opt, &mut it) { out.cmd_prompt = Some(v); } }
-                    "query" => { if let Some(v) = set_string(val_opt, &mut it) { out.query = Some(v); } }
-                    "cmd-query" => { if let Some(v) = set_string(val_opt, &mut it) { out.cmd_query = Some(v); } }
-                    "color" => { if let Some(v) = set_string(val_opt, &mut it) { out.color = Some(v); } }
-                    "margin" => { if let Some(v) = set_string(val_opt, &mut it) { out.margin = Some(v); } }
-                    "min-height" => { if let Some(v) = set_string(val_opt, &mut it) { out.min_height = Some(v); } }
-                    "height" => { if let Some(v) = set_string(val_opt, &mut it) { out.height = Some(v); } }
-                    "preview-window" => { if let Some(v) = set_string(val_opt, &mut it) { out.preview_window = Some(v); } }
-                    "layout" => { if let Some(v) = set_string(val_opt, &mut it) { out.layout = Some(v); } }
-                    "skip-to-pattern" => { if let Some(v) = set_string(val_opt, &mut it) { out.skip_to_pattern = Some(v); } }
-
-                    "tabstop" => { if let Some(v) = set_string(val_opt, &mut it) { if let Ok(n) = v.parse::<usize>() { out.tabstop = Some(n); } } }
-
-                    "algo" => { if let Some(v) = set_string(val_opt, &mut it) {
-                        out.algorithm = match v.as_str() {
-                            "skim_v1" => Some(FuzzyAlgorithm::SkimV1),
-                            "skim_v2" => Some(FuzzyAlgorithm::SkimV2),
-                            "clangd" => Some(FuzzyAlgorithm::Clangd),
-                            _ => None,
+                    "prompt" => {
+                        if let Some(v) = set_string(val_opt, &mut it) {
+                            out.prompt = Some(v);
                         }
-                    } }
-                    "case" => { if let Some(v) = set_string(val_opt, &mut it) {
-                        out.case = match v.as_str() {
-                            "smart" => Some(CaseMatching::Smart),
-                            "ignore" => Some(CaseMatching::Ignore),
-                            "respect" => Some(CaseMatching::Respect),
-                            _ => None,
+                    }
+                    "cmd-prompt" => {
+                        if let Some(v) = set_string(val_opt, &mut it) {
+                            out.cmd_prompt = Some(v);
                         }
-                    } }
-
-                    "expect" => { if let Some(v) = set_string(val_opt, &mut it) {
-                        out.expect = Some(split_csv_like(&v))
-                    } }
-                    "tiebreak" => { if let Some(v) = set_string(val_opt, &mut it) {
-                        let vals = split_csv_like(&v);
-                        let mut parsed = Vec::new();
-                        for s in vals {
-                            if let Ok(rc) = RankCriteria::from_str(&s, true) { parsed.push(rc); }
+                    }
+                    "query" => {
+                        if let Some(v) = set_string(val_opt, &mut it) {
+                            out.query = Some(v);
                         }
-                        out.tiebreak = Some(parsed);
-                    } }
-                    "bind" => { if let Some(v) = set_string(val_opt, &mut it) {
-                        // accept comma-separated bind entries like skim
-                        let entries = v.split(',').map(|s| s.trim().to_string()).filter(|s| !s.is_empty()).collect::<Vec<_>>();
-                        out.bind = Some(entries);
-                    } }
+                    }
+                    "cmd-query" => {
+                        if let Some(v) = set_string(val_opt, &mut it) {
+                            out.cmd_query = Some(v);
+                        }
+                    }
+                    "color" => {
+                        if let Some(v) = set_string(val_opt, &mut it) {
+                            out.color = Some(v);
+                        }
+                    }
+                    "margin" => {
+                        if let Some(v) = set_string(val_opt, &mut it) {
+                            out.margin = Some(v);
+                        }
+                    }
+                    "min-height" => {
+                        if let Some(v) = set_string(val_opt, &mut it) {
+                            out.min_height = Some(v);
+                        }
+                    }
+                    "height" => {
+                        if let Some(v) = set_string(val_opt, &mut it) {
+                            out.height = Some(v);
+                        }
+                    }
+                    "preview-window" => {
+                        if let Some(v) = set_string(val_opt, &mut it) {
+                            out.preview_window = Some(v);
+                        }
+                    }
+                    "layout" => {
+                        if let Some(v) = set_string(val_opt, &mut it) {
+                            out.layout = Some(v);
+                        }
+                    }
+                    "skip-to-pattern" => {
+                        if let Some(v) = set_string(val_opt, &mut it) {
+                            out.skip_to_pattern = Some(v);
+                        }
+                    }
 
-                    "pre-select-n" => { if let Some(v) = set_string(val_opt, &mut it) { if let Ok(n) = v.parse::<usize>() { out.pre_select_n = Some(n); } } }
-                    "pre-select-pat" => { if let Some(v) = set_string(val_opt, &mut it) { out.pre_select_pat = Some(v); } }
-                    "pre-select-items" => { if let Some(v) = set_string(val_opt, &mut it) {
-                        out.pre_select_items = Some(split_csv_like(&v))
-                    } }
-                    "pre-select-file" => { if let Some(v) = set_string(val_opt, &mut it) { out.pre_select_file = Some(PathBuf::from(v)); } }
+                    "tabstop" => {
+                        if let Some(v) = set_string(val_opt, &mut it) {
+                            if let Ok(n) = v.parse::<usize>() {
+                                out.tabstop = Some(n);
+                            }
+                        }
+                    }
+
+                    "algo" => {
+                        if let Some(v) = set_string(val_opt, &mut it) {
+                            out.algorithm = match v.as_str() {
+                                "skim_v1" => Some(FuzzyAlgorithm::SkimV1),
+                                "skim_v2" => Some(FuzzyAlgorithm::SkimV2),
+                                "clangd" => Some(FuzzyAlgorithm::Clangd),
+                                _ => None,
+                            }
+                        }
+                    }
+                    "case" => {
+                        if let Some(v) = set_string(val_opt, &mut it) {
+                            out.case = match v.as_str() {
+                                "smart" => Some(CaseMatching::Smart),
+                                "ignore" => Some(CaseMatching::Ignore),
+                                "respect" => Some(CaseMatching::Respect),
+                                _ => None,
+                            }
+                        }
+                    }
+
+                    "expect" => {
+                        if let Some(v) = set_string(val_opt, &mut it) {
+                            out.expect = Some(split_csv_like(&v))
+                        }
+                    }
+                    "tiebreak" => {
+                        if let Some(v) = set_string(val_opt, &mut it) {
+                            let vals = split_csv_like(&v);
+                            let mut parsed = Vec::new();
+                            for s in vals {
+                                if let Ok(rc) = RankCriteria::from_str(&s, true) {
+                                    parsed.push(rc);
+                                }
+                            }
+                            out.tiebreak = Some(parsed);
+                        }
+                    }
+                    "bind" => {
+                        if let Some(v) = set_string(val_opt, &mut it) {
+                            // accept comma-separated bind entries like skim
+                            let entries = v
+                                .split(',')
+                                .map(|s| s.trim().to_string())
+                                .filter(|s| !s.is_empty())
+                                .collect::<Vec<_>>();
+                            out.bind = Some(entries);
+                        }
+                    }
+
+                    "pre-select-n" => {
+                        if let Some(v) = set_string(val_opt, &mut it) {
+                            if let Ok(n) = v.parse::<usize>() {
+                                out.pre_select_n = Some(n);
+                            }
+                        }
+                    }
+                    "pre-select-pat" => {
+                        if let Some(v) = set_string(val_opt, &mut it) {
+                            out.pre_select_pat = Some(v);
+                        }
+                    }
+                    "pre-select-items" => {
+                        if let Some(v) = set_string(val_opt, &mut it) {
+                            out.pre_select_items = Some(split_csv_like(&v))
+                        }
+                    }
+                    "pre-select-file" => {
+                        if let Some(v) = set_string(val_opt, &mut it) {
+                            out.pre_select_file = Some(PathBuf::from(v));
+                        }
+                    }
 
                     _ => { /* unrecognized; ignore */ }
                 }
@@ -750,8 +849,15 @@ impl EnvDefaults {
     }
 }
 
-fn set_string<I: Iterator<Item = String>>(val_opt: Option<String>, it: &mut std::iter::Peekable<I>) -> Option<String> {
-    if let Some(v) = val_opt { Some(v) } else { it.next() }
+fn set_string<I: Iterator<Item = String>>(
+    val_opt: Option<String>,
+    it: &mut std::iter::Peekable<I>,
+) -> Option<String> {
+    if let Some(v) = val_opt {
+        Some(v)
+    } else {
+        it.next()
+    }
 }
 
 fn split_csv_like(s: &str) -> Vec<String> {
