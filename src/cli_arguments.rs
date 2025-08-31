@@ -14,7 +14,6 @@ use shlex::Shlex;
 use skim::{
     prelude::DefaultSkimSelector, CaseMatching, FuzzyAlgorithm, RankCriteria, Selector, SkimOptions,
 };
-use std::env;
 
 use crate::predicate_based_selector::{CombinedSelector, PredicateBasedSelector};
 
@@ -70,7 +69,7 @@ pub struct CliArguments {
 impl CliArguments {
     #[allow(clippy::result_large_err)]
     pub fn new(call: &EvaluatedCall, engine: &EngineInterface) -> Result<Self, LabeledError> {
-        let env_defaults = EnvDefaults::from_env();
+        let env_defaults = EnvDefaults::from_env(engine);
         Ok(Self {
             bind: if let Some(bind) = call.get_flag::<Record>("bind")? {
                 bind.iter()
@@ -628,11 +627,14 @@ struct EnvDefaults {
 }
 
 impl EnvDefaults {
-    fn from_env() -> Self {
-        let Ok(raw) = env::var("SKIM_DEFAULT_OPTIONS") else {
-            return Self::default();
-        };
-        Self::from_options_str(&raw)
+    fn from_env(engine: &EngineInterface) -> Self {
+        match engine.get_env_var("SKIM_DEFAULT_OPTIONS") {
+            Ok(Some(value)) => match value.coerce_string() {
+                Ok(raw) => Self::from_options_str(&raw),
+                Err(_) => Self::default(),
+            },
+            _ => Self::default(),
+        }
     }
 
     fn from_options_str(s: &str) -> Self {
