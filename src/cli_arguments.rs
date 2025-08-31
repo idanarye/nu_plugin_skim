@@ -200,8 +200,8 @@ impl CliArguments {
                     dumb_selector = Some(dumb_selector.take().unwrap_or_default().preset(items));
                 }
                 if let Some(file_path) = env_defaults.pre_select_file {
-                    let file = File::open(file_path)
-                        .map_err(|e| LabeledError::new(e.to_string()))?;
+                    let file =
+                        File::open(file_path).map_err(|e| LabeledError::new(e.to_string()))?;
                     let items = BufReader::new(file)
                         .lines()
                         .collect::<Result<Vec<String>, _>>()
