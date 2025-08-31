@@ -187,6 +187,29 @@ impl CliArguments {
             sync: call.has_flag("sync")? || env_defaults.sync.unwrap_or(false),
             selector: {
                 let mut dumb_selector: Option<DefaultSkimSelector> = None;
+
+                // First apply env-derived pre-select options (if any),
+                // then apply flag-derived options additively.
+                if let Some(n) = env_defaults.pre_select_n {
+                    dumb_selector = Some(dumb_selector.take().unwrap_or_default().first_n(n));
+                }
+                if let Some(pat) = env_defaults.pre_select_pat {
+                    dumb_selector = Some(dumb_selector.take().unwrap_or_default().regex(&pat));
+                }
+                if let Some(items) = env_defaults.pre_select_items {
+                    dumb_selector = Some(dumb_selector.take().unwrap_or_default().preset(items));
+                }
+                if let Some(file_path) = env_defaults.pre_select_file {
+                    let file = File::open(file_path)
+                        .map_err(|e| LabeledError::new(e.to_string()))?;
+                    let items = BufReader::new(file)
+                        .lines()
+                        .collect::<Result<Vec<String>, _>>()
+                        .map_err(|e| LabeledError::new(e.to_string()))?;
+                    dumb_selector = Some(dumb_selector.take().unwrap_or_default().preset(items));
+                }
+
+                // Now apply flag-derived pre-select options additively
                 if let Some(n) = call.get_flag::<usize>("pre-select-n")? {
                     dumb_selector = Some(dumb_selector.take().unwrap_or_default().first_n(n));
                 }
@@ -205,28 +228,6 @@ impl CliArguments {
                         .collect::<Result<Vec<String>, _>>()
                         .map_err(|e| LabeledError::new(e.to_string()))?;
                     dumb_selector = Some(dumb_selector.take().unwrap_or_default().preset(items));
-                }
-                if dumb_selector.is_none() {
-                    if let Some(n) = env_defaults.pre_select_n {
-                        dumb_selector = Some(dumb_selector.take().unwrap_or_default().first_n(n));
-                    }
-                    if let Some(pat) = env_defaults.pre_select_pat {
-                        dumb_selector = Some(dumb_selector.take().unwrap_or_default().regex(&pat));
-                    }
-                    if let Some(items) = env_defaults.pre_select_items {
-                        dumb_selector =
-                            Some(dumb_selector.take().unwrap_or_default().preset(items));
-                    }
-                    if let Some(file_path) = env_defaults.pre_select_file {
-                        let file =
-                            File::open(file_path).map_err(|e| LabeledError::new(e.to_string()))?;
-                        let items = BufReader::new(file)
-                            .lines()
-                            .collect::<Result<Vec<String>, _>>()
-                            .map_err(|e| LabeledError::new(e.to_string()))?;
-                        dumb_selector =
-                            Some(dumb_selector.take().unwrap_or_default().preset(items));
-                    }
                 }
                 if let Some(predicate) = call.get_flag::<Spanned<Closure>>("pre-select")? {
                     let predicate_based_selector = PredicateBasedSelector {
