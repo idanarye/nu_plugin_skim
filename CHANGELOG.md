@@ -4,6 +4,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.18.0](https://github.com/idanarye/nu_plugin_skim/compare/v0.17.0...v0.18.0) (2025-09-01)
+
+
+### Features
+
+* add default argument by $SKIM_DEFAULT_OPTIONS. Code is generate by ChatGPT-codex, review before merge. ([32ec382](https://github.com/idanarye/nu_plugin_skim/commit/32ec38263fc72c901cf6cafc5842ffa1d7f9a53a))
+* add default argument doc to README; sty: format by prettier ([2e5a8b4](https://github.com/idanarye/nu_plugin_skim/commit/2e5a8b4610d57d47f5791117fabc2765446cb7e6))
+* use $SKIM_DEFAULT_OPTIONS for default arguments ([cebe658](https://github.com/idanarye/nu_plugin_skim/commit/cebe658e1d67ba396ee7ba88777b46f6fcf270b7))
+
+
+### Bug Fixes
+
+* resolve cargo check and clippy warnings; sty: format code with cargo fmt &lt;NO BREAKING CHANGES&gt; ([f9cfa4c](https://github.com/idanarye/nu_plugin_skim/commit/f9cfa4c865afeb4c78ac949df937d0a416da6540))
+* use `EngineInterface::get_env_var` instead of `std:env:var` ([98a9c34](https://github.com/idanarye/nu_plugin_skim/commit/98a9c34bab4ca7cd4fbdac35af67e8429e9c8d38))
+* use both environmentVariable and arguments input now, like `skim` ([64ace17](https://github.com/idanarye/nu_plugin_skim/commit/64ace17916686a7c50d9e0c960c13f6a269d6e08))
+
 ## [0.17.0](https://github.com/idanarye/nu_plugin_skim/compare/v0.16.0...v0.17.0) (2025-08-26)
 
 
