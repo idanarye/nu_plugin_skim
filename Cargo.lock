@@ -1389,6 +1389,7 @@ dependencies = [
  "nu-plugin",
  "nu-plugin-test-support",
  "nu-protocol",
+ "shlex",
  "skim",
 ]
 
