@@ -190,9 +190,7 @@ impl PluginCommand for Sk {
                 if let Event::EvActAccept(Some(action)) = skim_output.final_event {
                     Value::string(action, span)
                 } else {
-                    Value::Nothing {
-                        internal_span: span,
-                    }
+                    Value::nothing(span)
                 },
             );
 
@@ -208,10 +206,7 @@ impl PluginCommand for Sk {
             );
 
             Ok(PipelineData::Value(
-                Value::Record {
-                    val: record.into(),
-                    internal_span: span,
-                },
+                Value::record(record, span),
                 pipeline_metadata,
             ))
         }

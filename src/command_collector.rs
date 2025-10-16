@@ -27,10 +27,7 @@ impl CommandCollector for NuCommandCollector {
 
             match context.engine.eval_closure_with_stream(
                 &closure,
-                vec![Value::String {
-                    val: cmd,
-                    internal_span: Span::unknown(),
-                }],
+                vec![Value::string(cmd, Span::unknown())],
                 PipelineData::Empty,
                 true,
                 true,
