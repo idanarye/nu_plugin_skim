@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.20.1](https://github.com/idanarye/nu_plugin_skim/compare/v0.20.0...v0.20.1) (2025-10-16)
+
+
+### Bug Fixes
+
+* Use the `sqlite` feature of the `nu-protocol` requirement, to be able to load the user nushell config if they use sqlite ([cdbd145](https://github.com/idanarye/nu_plugin_skim/commit/cdbd1456048b2023bc0a6a65067513ebf53e64ed))
+
 ## [0.20.0](https://github.com/idanarye/nu_plugin_skim/compare/v0.19.0...v0.20.0) (2025-10-16)
 
 
