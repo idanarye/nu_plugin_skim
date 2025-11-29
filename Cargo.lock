@@ -1484,7 +1484,7 @@ dependencies = [
 
 [[package]]
 name = "nu_plugin_skim"
-version = "0.20.1"
+version = "0.21.0"
 dependencies = [
  "clap",
  "nu-color-config",
