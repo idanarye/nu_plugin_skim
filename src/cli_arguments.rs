@@ -22,7 +22,6 @@ pub struct CliArguments {
     multi: bool,
     prompt: Option<String>,
     cmd_prompt: Option<String>,
-    expect: Vec<String>,
     tac: bool,
     no_sort: bool,
     tiebreak: Vec<RankCriteria>,
@@ -84,9 +83,6 @@ impl CliArguments {
             multi: call.has_flag("multi")? || env_defaults.multi.unwrap_or(false),
             prompt: call.get_flag("prompt")?.or(env_defaults.prompt),
             cmd_prompt: call.get_flag("cmd-prompt")?.or(env_defaults.cmd_prompt),
-            expect: call
-                .get_flag("expect")?
-                .unwrap_or_else(|| env_defaults.expect.unwrap_or_default()),
             tac: call.has_flag("tac")? || env_defaults.tac.unwrap_or(false),
             no_sort: call.has_flag("no-sort")? || env_defaults.no_sort.unwrap_or(false),
             tiebreak: {
@@ -264,12 +260,6 @@ impl CliArguments {
             .switch("multi", "Select multiple values", Some('m'))
             .named("prompt", SyntaxShape::String, "Input prompt", None)
             .named("cmd-prompt", SyntaxShape::String, "Command mode prompt", None)
-            .named(
-                "expect",
-                SyntaxShape::List(Box::new(SyntaxShape::String)),
-                "List of keys that can be used to complete sk in addition to the default enter key",
-                None,
-            )
             .switch("tac", "Reverse  the  order  of  the search result (normally used together with --no-sort)", None)
             .switch("no-sort", "Do not sort the search result (normally used together with --tac)", None)
             .named(
@@ -449,7 +439,6 @@ impl CliArguments {
             multi,
             prompt,
             cmd_prompt,
-            expect,
             tac,
             no_sort: nosort,
             tiebreak,
@@ -491,7 +480,7 @@ impl CliArguments {
             no_multi: !*multi,
             prompt: prompt.as_deref().unwrap_or_default().to_owned(),
             cmd_prompt: cmd_prompt.as_deref().unwrap_or_default().to_owned(),
-            expect: expect.clone(),
+            expect: Default::default(), // because its deprecated
             tac: *tac,
             no_sort: *nosort,
             tiebreak: tiebreak.clone(),
