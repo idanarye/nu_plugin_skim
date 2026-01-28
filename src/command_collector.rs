@@ -18,7 +18,7 @@ impl CommandCollector for NuCommandCollector {
         components_to_stop: std::sync::Arc<std::sync::atomic::AtomicUsize>,
     ) -> (skim::SkimItemReceiver, skim::prelude::Sender<i32>) {
         let (tx, rx) = unbounded::<Arc<dyn SkimItem>>();
-        let (tx_interrupt, rx_interrupt) = unbounded();
+        let (tx_interrupt, mut rx_interrupt) = unbounded();
         let context = self.context.clone();
         let closure = self.closure.clone();
         let cmd = cmd.to_owned();
@@ -40,12 +40,12 @@ impl CommandCollector for NuCommandCollector {
                                 break;
                             }
                             let send_result = match line {
-                                Ok(line) => tx.try_send(Arc::new(NuItem::new(
+                                Ok(line) => tx.send(Arc::new(NuItem::new(
                                     index,
                                     context.clone(),
                                     Value::string(line, span),
                                 ))),
-                                Err(err) => tx.try_send(Arc::new(NuItem::new(
+                                Err(err) => tx.send(Arc::new(NuItem::new(
                                     index,
                                     context.clone(),
                                     Value::error(err, span),
@@ -63,14 +63,14 @@ impl CommandCollector for NuCommandCollector {
                             break;
                         }
                         let send_result =
-                            tx.try_send(Arc::new(NuItem::new(index, context.clone(), value)));
+                            tx.send(Arc::new(NuItem::new(index, context.clone(), value)));
                         if send_result.is_err() {
                             break;
                         }
                     }
                 }
                 Err(err) => {
-                    let _ = tx.try_send(Arc::new(NuItem::new(
+                    let _ = tx.send(Arc::new(NuItem::new(
                         0,
                         context.clone(),
                         Value::error(err, Span::unknown()),

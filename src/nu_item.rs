@@ -1,5 +1,6 @@
 use nu_plugin::EvaluatedCall;
 use nu_protocol::{IntoSpanned, PipelineData, ShellError, Span, Value};
+use ratatui::text::Line;
 use skim::prelude::*;
 
 use crate::command_context::CommandContext;
@@ -8,13 +9,13 @@ pub struct NuItem {
     pub index: usize,
     pub context: Arc<CommandContext>,
     pub value: Value,
-    pub display: AnsiString<'static>,
+    pub display: Line<'static>,
 }
 
 impl NuItem {
     pub fn new(index: usize, context: Arc<CommandContext>, value: Value) -> Self {
-        let display = AnsiString::parse(
-            &context
+        let display = Line::from(
+            context
                 .format
                 .map(&context, &value)
                 .to_expanded_string(", ", &context.nu_config),
@@ -30,13 +31,14 @@ impl NuItem {
 
 impl SkimItem for NuItem {
     fn text(&self) -> Cow<'_, str> {
-        self.display.stripped().to_owned().into()
+        self.display.to_string().into()
     }
 
-    fn display<'a>(&'a self, context: DisplayContext<'a>) -> AnsiString<'a> {
+    fn display<'a>(&'a self, _context: DisplayContext) -> Line<'a> {
         // Ensure highlight visibility identical to skim: build from DisplayContext.
         // This uses skim's theme (including --color) for both current and matched segments.
-        context.into()
+        self.display.clone()
+        // context.into()
     }
 
     fn preview(&self, context: PreviewContext) -> ItemPreview {

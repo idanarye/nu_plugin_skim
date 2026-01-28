@@ -15,6 +15,7 @@ use nu_protocol::{
     Type, Value,
 };
 use skim::prelude::*;
+use skim::tui::event::Action;
 
 pub struct SkimPlugin;
 
@@ -156,22 +157,24 @@ impl PluginCommand for Sk {
         };
 
         let _foreground = engine.enter_foreground()?;
-        let skim_output = Skim::run_with(&skim_options, receiver).unwrap();
+        let option_expect_is_empty = skim_options.expect.is_empty();
+        let option_multi = skim_options.multi;
+        let skim_output = Skim::run_with(skim_options, receiver).unwrap();
 
         if skim_output.is_abort {
             return Ok(PipelineData::empty());
         }
 
         let mut result = skim_output.selected_items.into_iter().map(|item| {
-            (*item)
+            (*item.item)
                 .as_any()
                 .downcast_ref::<NuItem>()
                 .unwrap()
                 .value
                 .clone()
         });
-        if skim_options.expect.is_empty() {
-            if skim_options.multi {
+        if option_expect_is_empty {
+            if option_multi {
                 Ok(PipelineData::ListStream(
                     ListStream::new(result, span, Signals::EMPTY),
                     pipeline_metadata,
@@ -187,7 +190,7 @@ impl PluginCommand for Sk {
             let mut record = Record::new();
             record.push(
                 "action",
-                if let Event::EvActAccept(Some(action)) = skim_output.final_event {
+                if let Event::Action(Action::Accept(Some(action))) = skim_output.final_event {
                     Value::string(action, span)
                 } else {
                     Value::nothing(span)
@@ -196,7 +199,7 @@ impl PluginCommand for Sk {
 
             record.push(
                 "selected",
-                if skim_options.multi {
+                if option_multi {
                     Value::list(result.collect(), span)
                 } else if let Some(result) = result.next() {
                     result

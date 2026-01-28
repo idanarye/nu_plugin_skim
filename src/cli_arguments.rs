@@ -12,7 +12,9 @@ use nu_protocol::{
 };
 use shlex::Shlex;
 use skim::{
-    prelude::DefaultSkimSelector, CaseMatching, FuzzyAlgorithm, RankCriteria, Selector, SkimOptions,
+    prelude::DefaultSkimSelector,
+    tui::options::{PreviewLayout, TuiLayout},
+    CaseMatching, FuzzyAlgorithm, RankCriteria, Selector, SkimOptions,
 };
 
 use crate::predicate_based_selector::{CombinedSelector, PredicateBasedSelector};
@@ -49,7 +51,7 @@ pub struct CliArguments {
     inline_info: bool,
     //header: Option<String>,
     //header_lines: usize,
-    layout: Option<String>,
+    layout: Option<TuiLayout>,
     algorithm: FuzzyAlgorithm,
     case: CaseMatching,
     //engine_factory: Option<Rc<dyn MatchEngineFactory>>,
@@ -136,7 +138,19 @@ impl CliArguments {
             no_hscroll: call.has_flag("no-hscroll")? || env_defaults.no_hscroll.unwrap_or(false),
             no_mouse: call.has_flag("no-mouse")? || env_defaults.no_mouse.unwrap_or(false),
             inline_info: call.has_flag("inline-info")? || env_defaults.inline_info.unwrap_or(false),
-            layout: call.get_flag("layout")?.or(env_defaults.layout),
+            layout: call
+                .get_flag("layout")?
+                .or(env_defaults.layout)
+                .map(|layout| TuiLayout::from_str(&layout, true))
+                .transpose()
+                .map_err(|err| {
+                    let err = LabeledError::new(err);
+                    if let Ok(Some(flag)) = call.get_flag("layout") {
+                        err.with_label("here", flag)
+                    } else {
+                        err
+                    }
+                })?,
             algorithm: call
                 .get_flag::<String>("algo")?
                 .as_deref()
@@ -497,16 +511,19 @@ impl CliArguments {
             no_clear_start: *no_clear_start,
             min_height: min_height.as_deref().unwrap_or("10").to_owned(),
             height: height.as_deref().unwrap_or("100%").to_owned(),
-            preview_window: preview_window.as_deref().unwrap_or("right:50%").to_owned(),
+            preview_window: preview_window
+                .as_deref()
+                .map(PreviewLayout::from)
+                .unwrap_or_default(),
             reverse: *reverse,
             tabstop: tabstop.unwrap_or(8),
             no_hscroll: *no_hscroll,
             no_mouse: *no_mouse,
             inline_info: *inline_info,
             layout: if *reverse {
-                "reverse"
+                TuiLayout::Reverse
             } else {
-                layout.as_deref().unwrap_or("default")
+                layout.unwrap_or_default()
             }
             .to_owned(),
             algorithm: *algorithm,
@@ -563,12 +580,26 @@ impl CliArguments {
             jump_labels: default_options.jump_labels,
             border: default_options.border,
             no_bold: default_options.no_bold,
-            pointer: default_options.pointer,
-            marker: default_options.marker,
             phony: default_options.phony,
             query_history: default_options.query_history,
             cmd_history: default_options.cmd_history,
             preview_fn: default_options.preview_fn,
+
+            // Also these, which were added at version 1.0.0 or later:
+            normalize: default_options.normalize,
+            split_match: default_options.split_match,
+            disabled: default_options.disabled,
+            selector_icon: default_options.selector_icon,
+            multi_select_icon: default_options.multi_select_icon,
+            wrap_items: default_options.wrap_items,
+            print_header: default_options.print_header,
+            no_strip_ansi: default_options.no_strip_ansi,
+            shell_bindings: default_options.shell_bindings,
+            man: default_options.man,
+            listen: default_options.listen,
+            remote: default_options.remote,
+            log_file: default_options.log_file,
+            keymap: default_options.keymap,
         }
     }
 }

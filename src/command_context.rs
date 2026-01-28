@@ -34,9 +34,9 @@ impl TryFrom<Value> for MapperFlag {
 
     fn try_from(value: Value) -> Result<Self, Self::Error> {
         match value {
-            Value::Closure { val, internal_span, .. } => {
-                Ok(Self::Closure((*val).into_spanned(internal_span)))
-            }
+            Value::Closure {
+                val, internal_span, ..
+            } => Ok(Self::Closure((*val).into_spanned(internal_span))),
             _ => Err(ShellError::CantConvert {
                 to_type: "closure".to_owned(),
                 from_type: value.get_type().to_string(),
@@ -64,8 +64,10 @@ impl MapperFlag {
                     Ok(PipelineData::Value(value, _)) => value,
                     Ok(PipelineData::ListStream(list_stream, _)) => {
                         let span = list_stream.span();
-                        list_stream.into_value().unwrap_or_else(|err| Value::error(err, span))
-                    },
+                        list_stream
+                            .into_value()
+                            .unwrap_or_else(|err| Value::error(err, span))
+                    }
                     Ok(PipelineData::ByteStream(byte_stream, _)) => {
                         let span = byte_stream.span();
                         match byte_stream.into_string() {
