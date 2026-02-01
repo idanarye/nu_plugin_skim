@@ -12,6 +12,7 @@ use nu_protocol::{
 };
 use shlex::Shlex;
 use skim::{
+    binds::KeyMap,
     prelude::DefaultSkimSelector,
     tui::options::{PreviewLayout, TuiLayout},
     CaseMatching, FuzzyAlgorithm, RankCriteria, Selector, SkimOptions,
@@ -490,6 +491,11 @@ impl CliArguments {
 
         SkimOptions {
             bind: bind.clone(),
+            keymap: {
+                let mut keymap = KeyMap::default();
+                keymap.add_keymaps(bind.iter().map(String::as_str));
+                keymap
+            },
             multi: *multi,
             no_multi: !*multi,
             prompt: prompt.as_deref().unwrap_or_default().to_owned(),
@@ -599,7 +605,6 @@ impl CliArguments {
             listen: default_options.listen,
             remote: default_options.remote,
             log_file: default_options.log_file,
-            keymap: default_options.keymap,
         }
     }
 }
