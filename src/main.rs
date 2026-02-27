@@ -106,7 +106,7 @@ impl PluginCommand for Sk {
             // This is a hack to make Skim conjure what it thinks is the actual command but is
             // actually just the query, which will be sent to as the `cmd` argument to
             // `NuCommandCollector.invoke`.
-            skim_options.cmd = Some("{}".to_owned());
+            skim_options.cmd = Some("{q}".to_owned());
             skim_options.cmd_collector = Rc::new(RefCell::new(NuCommandCollector {
                 context: command_context.clone(),
                 closure,

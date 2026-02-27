@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use nu_protocol::{PipelineData, Span, Spanned, Value, engine::Closure};
+use shlex::Shlex;
 use skim::reader::CommandCollector;
 use skim::{SkimItem, prelude::unbounded};
 
@@ -21,7 +22,9 @@ impl CommandCollector for NuCommandCollector {
         let (tx_interrupt, mut rx_interrupt) = unbounded();
         let context = self.context.clone();
         let closure = self.closure.clone();
-        let cmd = cmd.to_owned();
+        let cmd = Shlex::new(cmd)
+            .next()
+            .expect("Skim's {q} should have produced a single shell-quoted value");
         std::thread::spawn(move || {
             components_to_stop.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
 
