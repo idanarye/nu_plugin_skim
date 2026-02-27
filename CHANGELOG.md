@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.24.0](https://github.com/idanarye/nu_plugin_skim/compare/v0.23.1...v0.24.0) (2026-02-27)
+
+
+### Features
+
+* Upgrade Rust edition to 2024 ([bd7bcba](https://github.com/idanarye/nu_plugin_skim/commit/bd7bcbae7a5db6397aba18adcf7ff8a546632c85))
+* Upgrade Skim to 2.*.* ([9f42ce2](https://github.com/idanarye/nu_plugin_skim/commit/9f42ce244d3a41dedf1991d98fdaa8aeaea30226))
+
+
+### Bug Fixes
+
+* `--cmd` flag (Fixes [#50](https://github.com/idanarye/nu_plugin_skim/issues/50)) ([45bf44a](https://github.com/idanarye/nu_plugin_skim/commit/45bf44a08fa61d8eb14ada0dac73ab0602245057))
+
 ## [0.23.1](https://github.com/idanarye/nu_plugin_skim/compare/v0.23.0...v0.23.1) (2026-02-01)
 
 
