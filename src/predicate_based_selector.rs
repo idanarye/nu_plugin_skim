@@ -1,5 +1,5 @@
 use nu_plugin::EngineInterface;
-use nu_protocol::{engine::Closure, PipelineData, Spanned};
+use nu_protocol::{PipelineData, Spanned, engine::Closure};
 use skim::prelude::*;
 
 use crate::nu_item::NuItem;

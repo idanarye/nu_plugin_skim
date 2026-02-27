@@ -8,14 +8,14 @@ use std::{
 use clap::ValueEnum;
 use nu_plugin::{EngineInterface, EvaluatedCall};
 use nu_protocol::{
-    engine::Closure, LabeledError, Record, ShellError, Signature, Spanned, SyntaxShape,
+    LabeledError, Record, ShellError, Signature, Spanned, SyntaxShape, engine::Closure,
 };
 use shlex::Shlex;
 use skim::{
+    CaseMatching, FuzzyAlgorithm, RankCriteria, Selector, SkimOptions,
     binds::KeyMap,
     prelude::DefaultSkimSelector,
     tui::options::{PreviewLayout, TuiLayout},
-    CaseMatching, FuzzyAlgorithm, RankCriteria, Selector, SkimOptions,
 };
 
 use crate::predicate_based_selector::{CombinedSelector, PredicateBasedSelector};
@@ -762,10 +762,10 @@ impl EnvDefaults {
                     }
 
                     "tabstop" => {
-                        if let Some(v) = set_string(val_opt, &mut it) {
-                            if let Ok(n) = v.parse::<usize>() {
-                                out.tabstop = Some(n);
-                            }
+                        if let Some(v) = set_string(val_opt, &mut it)
+                            && let Ok(n) = v.parse::<usize>()
+                        {
+                            out.tabstop = Some(n);
                         }
                     }
 
@@ -820,10 +820,10 @@ impl EnvDefaults {
                     }
 
                     "pre-select-n" => {
-                        if let Some(v) = set_string(val_opt, &mut it) {
-                            if let Ok(n) = v.parse::<usize>() {
-                                out.pre_select_n = Some(n);
-                            }
+                        if let Some(v) = set_string(val_opt, &mut it)
+                            && let Ok(n) = v.parse::<usize>()
+                        {
+                            out.pre_select_n = Some(n);
                         }
                     }
                     "pre-select-pat" => {

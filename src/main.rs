@@ -8,11 +8,11 @@ use cli_arguments::CliArguments;
 use command_collector::NuCommandCollector;
 use command_context::CommandContext;
 use nu_item::NuItem;
-use nu_plugin::{serve_plugin, MsgPackSerializer, Plugin, PluginCommand};
 use nu_plugin::{EngineInterface, EvaluatedCall};
+use nu_plugin::{MsgPackSerializer, Plugin, PluginCommand, serve_plugin};
 use nu_protocol::{
-    Category, LabeledError, ListStream, PipelineData, Record, Signals, Signature, SyntaxShape,
-    Type, Value,
+    Category, LabeledError, ListStream, PipelineData, Record, ShellError, Signals, Signature,
+    SyntaxShape, Type, Value,
 };
 use skim::prelude::*;
 use skim::tui::event::Action;
@@ -41,7 +41,13 @@ impl PluginCommand for Sk {
     fn signature(&self) -> Signature {
         let signature = {
             Signature::build(self.name())
-                .input_output_type(Type::List(Type::Any.into()), Type::List(Type::Any.into()))
+                .input_output_type(
+                    Type::one_of([
+                        Type::Nothing,
+                        Type::List(Type::Any.into()),
+                    ]),
+                    Type::List(Type::Any.into()),
+                )
                 .category(Category::Filters)
                 .filter()
                 .named(
@@ -96,7 +102,7 @@ impl PluginCommand for Sk {
 
         let command_context = Arc::new(command_context);
 
-        if let Some(closure) = call.get_flag("cmd")? {
+        let has_cmd = if let Some(closure) = call.get_flag("cmd")? {
             // This is a hack to make Skim conjure what it thinks is the actual command but is
             // actually just the query, which will be sent to as the `cmd` argument to
             // `NuCommandCollector.invoke`.
@@ -104,13 +110,18 @@ impl PluginCommand for Sk {
             skim_options.cmd_collector = Rc::new(RefCell::new(NuCommandCollector {
                 context: command_context.clone(),
                 closure,
-            }))
-        }
+            }));
+            true
+        } else {
+            false
+        };
 
         let receiver = match input {
             PipelineData::Empty => {
-                if skim_options.cmd.is_none() {
-                    return Ok(PipelineData::empty());
+                if !has_cmd {
+                    return Err(LabeledError::from_diagnostic(&ShellError::PipelineEmpty {
+                        dst_span: span,
+                    }));
                 }
                 None
             }

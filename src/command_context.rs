@@ -2,7 +2,7 @@ use std::{borrow::Cow, sync::Arc};
 
 use nu_plugin::EngineInterface;
 use nu_protocol::{
-    engine::Closure, IntoSpanned, LabeledError, PipelineData, ShellError, Spanned, Value,
+    IntoSpanned, LabeledError, PipelineData, ShellError, Spanned, Value, engine::Closure,
 };
 
 pub struct CommandContext {

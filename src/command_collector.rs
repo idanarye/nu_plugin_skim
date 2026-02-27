@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
-use nu_protocol::{engine::Closure, PipelineData, Span, Spanned, Value};
+use nu_protocol::{PipelineData, Span, Spanned, Value, engine::Closure};
 use skim::reader::CommandCollector;
-use skim::{prelude::unbounded, SkimItem};
+use skim::{SkimItem, prelude::unbounded};
 
 use crate::{command_context::CommandContext, nu_item::NuItem};
 
