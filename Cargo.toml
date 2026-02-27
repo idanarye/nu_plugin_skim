@@ -19,7 +19,7 @@ license = "MIT"
 nu-plugin = "0.110"
 nu-protocol = { version = "0.110", features = ["plugin"] }
 #nu-table = "0.99"
-skim = { version = "1", default-features = false, features = ["cli"] }
+skim = { version = "2", default-features = false, features = ["cli"] }
 nu-color-config = "0.110"
 clap = "4"
 shlex = "1"
