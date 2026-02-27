@@ -2001,7 +2001,7 @@ dependencies = [
 
 [[package]]
 name = "nu_plugin_skim"
-version = "0.24.0"
+version = "0.24.1"
 dependencies = [
  "clap",
  "interprocess",

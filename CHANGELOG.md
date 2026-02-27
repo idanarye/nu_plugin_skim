@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.24.1](https://github.com/idanarye/nu_plugin_skim/compare/v0.24.0...v0.24.1) (2026-02-27)
+
+
+### Bug Fixes
+
+* force an old version of interprocess because that package does not respect SemVer ([bf09862](https://github.com/idanarye/nu_plugin_skim/commit/bf09862d34c713d8811a806c08fb845be43a6d0e))
+
 ## [0.24.0](https://github.com/idanarye/nu_plugin_skim/compare/v0.23.1...v0.24.0) (2026-02-27)
 
 
