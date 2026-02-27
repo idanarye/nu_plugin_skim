@@ -25,6 +25,13 @@ clap = "4"
 shlex = "1"
 ratatui = "0.30"
 
+# Use old version of interprocess because nu-plugin-core uses that version, but
+# version 2.3.0 broke backward compatibility by removing
+# `ListenerNonblockingMode` reexport from `interprocess::local_socket::traits`
+# and Cargo thinks it's safe to upgrade to it because according to SemVer it
+# should be.
+interprocess = "2.2.3"
+
 [dev-dependencies]
 # nu-plugin-test-support = { path = "../nushell/crates/nu-plugin-test-support" }
 nu-plugin-test-support = { version = "0.110" }
