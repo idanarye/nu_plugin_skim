@@ -592,7 +592,7 @@ impl CliArguments {
             preview_fn: default_options.preview_fn,
 
             // Also these, which were added at version 1.0.0 or later:
-            normalize: default_options.normalize,
+            // normalize: default_options.normalize,
             split_match: default_options.split_match,
             disabled: default_options.disabled,
             selector_icon: default_options.selector_icon,
