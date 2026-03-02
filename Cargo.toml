@@ -28,3 +28,8 @@ ratatui = "0.30"
 [dev-dependencies]
 # nu-plugin-test-support = { path = "../nushell/crates/nu-plugin-test-support" }
 nu-plugin-test-support = { version = "0.111" }
+
+# The profile that 'dist' will build with
+[profile.dist]
+inherits = "release"
+lto = "thin"
