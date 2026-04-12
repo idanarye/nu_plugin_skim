@@ -4,6 +4,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0](https://github.com/idanarye/nu_plugin_skim/compare/v0.26.1...v1.0.0) (2026-04-12)
+
+
+### ⚠ BREAKING CHANGES
+
+* Make all the `ValueEnum` options case sensitive (like they are in Skim)
+
+### Features
+
+* Make all the `ValueEnum` options case sensitive (like they are in Skim) ([f545766](https://github.com/idanarye/nu_plugin_skim/commit/f54576664f34c3f34e2d6834075b2cf3e1d1cfd3))
+
+
+### Bug Fixes
+
+* Properly handle the various `ValueEnum` options of Skim ([d00642d](https://github.com/idanarye/nu_plugin_skim/commit/d00642de5678d609fce8f61812f189fba456e161))
+
 ## [0.26.1](https://github.com/idanarye/nu_plugin_skim/compare/v0.26.0...v0.26.1) (2026-04-12)
 
 
