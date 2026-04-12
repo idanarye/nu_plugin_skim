@@ -94,7 +94,7 @@ impl CliArguments {
                     .unwrap_or_default()
                     .into_iter()
                     .map(|flag| {
-                        RankCriteria::from_str(&flag.item, true).map_err(|_| {
+                        RankCriteria::from_str(&flag.item, false).map_err(|_| {
                             let possible_values = RankCriteria::value_variants()
                                 .iter()
                                 .flat_map(|v| {
@@ -653,7 +653,7 @@ impl EnvDefaults {
                     }
                     "layout" => {
                         if let Some(v) = set_string(val_opt, &mut it) {
-                            out.layout = TuiLayout::from_str(&v, true).ok();
+                            out.layout = TuiLayout::from_str(&v, false).ok();
                         }
                     }
                     "skip-to-pattern" => {
@@ -672,12 +672,12 @@ impl EnvDefaults {
 
                     "algo" => {
                         if let Some(v) = set_string(val_opt, &mut it) {
-                            out.algorithm = FuzzyAlgorithm::from_str(&v, true).ok();
+                            out.algorithm = FuzzyAlgorithm::from_str(&v, false).ok();
                         }
                     }
                     "case" => {
                         if let Some(v) = set_string(val_opt, &mut it) {
-                            out.case = CaseMatching::from_str(&v, true).ok();
+                            out.case = CaseMatching::from_str(&v, false).ok();
                         }
                     }
 
@@ -691,7 +691,7 @@ impl EnvDefaults {
                             let vals = split_csv_like(&v);
                             let mut parsed = Vec::new();
                             for s in vals {
-                                if let Ok(rc) = RankCriteria::from_str(&s, true) {
+                                if let Ok(rc) = RankCriteria::from_str(&s, false) {
                                     parsed.push(rc);
                                 }
                             }
@@ -810,7 +810,7 @@ fn value_enum_possibilities_string<T: ValueEnum>() -> String {
 
 fn parse_value_enum_from_flag<T: ValueEnum>(flag: nu_protocol::Value) -> Result<T, ShellError> {
     let str_value = flag.as_str()?;
-    T::from_str(str_value, true).map_err(|_| ShellError::InvalidValue {
+    T::from_str(str_value, false).map_err(|_| ShellError::InvalidValue {
         valid: format!("[{}]", value_enum_possibilities_string::<T>()),
         actual: str_value.to_owned(),
         span: flag.span(),
