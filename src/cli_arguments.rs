@@ -140,52 +140,18 @@ impl CliArguments {
             no_mouse: call.has_flag("no-mouse")? || env_defaults.no_mouse.unwrap_or(false),
             inline_info: call.has_flag("inline-info")? || env_defaults.inline_info.unwrap_or(false),
             layout: call
-                .get_flag("layout")?
-                .or(env_defaults.layout)
-                .map(|layout| TuiLayout::from_str(&layout, true))
-                .transpose()
-                .map_err(|err| {
-                    let err = LabeledError::new(err);
-                    if let Ok(Some(flag)) = call.get_flag("layout") {
-                        err.with_label("here", flag)
-                    } else {
-                        err
-                    }
-                })?,
-            algorithm: call
-                .get_flag::<String>("algo")?
-                .as_deref()
-                .map(|flag| match flag {
-                    "skim_v2" => Ok(FuzzyAlgorithm::SkimV2),
-                    "clangd" => Ok(FuzzyAlgorithm::Clangd),
-                    _ => Err(ShellError::InvalidValue {
-                        valid: "[skim_v2|clangd]".to_owned(),
-                        actual: flag.to_owned(),
-                        span: call
-                            .get_flag_value("algo")
-                            .expect("we already know the flag exists")
-                            .span(),
-                    }),
-                })
+                .get_flag_value("layout")
+                .map(parse_value_enum_from_flag)
                 .transpose()?
-                .or(env_defaults.algorithm)
-                .unwrap_or_default(),
+                .or(env_defaults.layout),
+            algorithm: call
+                .get_flag_value("algo")
+                .map(parse_value_enum_from_flag)
+                .transpose()?
+                .unwrap_or(env_defaults.algorithm.unwrap_or_default()),
             case: call
-                .get_flag::<String>("case")?
-                .as_deref()
-                .map(|flag| match flag {
-                    "smart" => Ok(CaseMatching::Smart),
-                    "ignore" => Ok(CaseMatching::Ignore),
-                    "respect" => Ok(CaseMatching::Respect),
-                    _ => Err(ShellError::InvalidValue {
-                        valid: "[smart|ignore|respect]".to_owned(),
-                        actual: flag.to_owned(),
-                        span: call
-                            .get_flag_value("case")
-                            .expect("we already know the flag exists")
-                            .span(),
-                    }),
-                })
+                .get_flag_value("case")
+                .map(parse_value_enum_from_flag)
                 .transpose()?
                 .unwrap_or(env_defaults.case.unwrap_or_default()),
             keep_right: call.has_flag("keep-right")? || env_defaults.keep_right.unwrap_or(false),
@@ -369,19 +335,19 @@ impl CliArguments {
             .named(
                 "layout",
                 SyntaxShape::String,
-                "Choose the layout",
+                format!("Choose the layout: [{}]", value_enum_possibilities_string::<TuiLayout>()),
                 None,
             )
             .named(
                 "algo",
                 SyntaxShape::String,
-                "Fuzzy matching algorithm: [skim_v2|clangd] (default: skim_v2)",
+                format!("Fuzzy matching algorithm: [{}] (default: skim_v2)", value_enum_possibilities_string::<FuzzyAlgorithm>()),
                 None,
             )
             .named(
                 "case",
                 SyntaxShape::String,
-                "Case sensitivity: [smart|ignore|respect] (default: smart)",
+                format!("Case sensitivity: [{}] (default: smart)", value_enum_possibilities_string::<CaseMatching>()),
                 None,
             )
             .switch(
@@ -572,7 +538,7 @@ struct EnvDefaults {
     no_hscroll: Option<bool>,
     no_mouse: Option<bool>,
     inline_info: Option<bool>,
-    layout: Option<String>,
+    layout: Option<TuiLayout>,
     algorithm: Option<FuzzyAlgorithm>,
     case: Option<CaseMatching>,
     keep_right: Option<bool>,
@@ -687,7 +653,7 @@ impl EnvDefaults {
                     }
                     "layout" => {
                         if let Some(v) = set_string(val_opt, &mut it) {
-                            out.layout = Some(v);
+                            out.layout = TuiLayout::from_str(&v, true).ok();
                         }
                     }
                     "skip-to-pattern" => {
@@ -706,21 +672,12 @@ impl EnvDefaults {
 
                     "algo" => {
                         if let Some(v) = set_string(val_opt, &mut it) {
-                            out.algorithm = match v.as_str() {
-                                "skim_v2" => Some(FuzzyAlgorithm::SkimV2),
-                                "clangd" => Some(FuzzyAlgorithm::Clangd),
-                                _ => None,
-                            }
+                            out.algorithm = FuzzyAlgorithm::from_str(&v, true).ok();
                         }
                     }
                     "case" => {
                         if let Some(v) = set_string(val_opt, &mut it) {
-                            out.case = match v.as_str() {
-                                "smart" => Some(CaseMatching::Smart),
-                                "ignore" => Some(CaseMatching::Ignore),
-                                "respect" => Some(CaseMatching::Respect),
-                                _ => None,
-                            }
+                            out.case = CaseMatching::from_str(&v, true).ok();
                         }
                     }
 
@@ -827,4 +784,35 @@ fn split_csv_like(s: &str) -> Vec<String> {
         .filter(|t| !t.is_empty())
         .map(|t| t.to_string())
         .collect()
+}
+
+fn with_value_enum_possible_values<T: ValueEnum>(mut dlg: impl FnMut(&str)) {
+    for variant in T::value_variants() {
+        let Some(possible_value) = variant.to_possible_value() else {
+            continue;
+        };
+        for value in possible_value.get_name_and_aliases() {
+            dlg(value);
+        }
+    }
+}
+
+fn value_enum_possibilities_string<T: ValueEnum>() -> String {
+    let mut result = String::new();
+    with_value_enum_possible_values::<T>(|value| {
+        if !result.is_empty() {
+            result.push('|');
+        }
+        result.push_str(value);
+    });
+    result
+}
+
+fn parse_value_enum_from_flag<T: ValueEnum>(flag: nu_protocol::Value) -> Result<T, ShellError> {
+    let str_value = flag.as_str()?;
+    T::from_str(str_value, true).map_err(|_| ShellError::InvalidValue {
+        valid: format!("[{}]", value_enum_possibilities_string::<T>()),
+        actual: str_value.to_owned(),
+        span: flag.span(),
+    })
 }
