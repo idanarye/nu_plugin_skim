@@ -81,11 +81,11 @@ impl PluginCommand for Sk {
         _plugin: &SkimPlugin,
         engine: &EngineInterface,
         call: &EvaluatedCall,
-        input: PipelineData,
+        mut input: PipelineData,
     ) -> Result<PipelineData, LabeledError> {
         let span = call.head;
 
-        let pipeline_metadata = input.metadata();
+        let pipeline_metadata = input.take_metadata();
 
         let cli_arguments = CliArguments::new(call, engine)?;
         let mut skim_options = cli_arguments.to_skim_options();

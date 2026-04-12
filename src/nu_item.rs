@@ -1,4 +1,5 @@
 use nu_plugin::EvaluatedCall;
+use nu_protocol::shell_error::generic::GenericError;
 use nu_protocol::{IntoSpanned, PipelineData, ShellError, Span, Value};
 use ratatui::text::Line;
 use skim::prelude::*;
@@ -46,17 +47,15 @@ impl SkimItem for NuItem {
         if let Ok(preview_result) = preview_result.coerce_string() {
             return ItemPreview::AnsiText(preview_result);
         }
-        let result = self
-            .context
-            .engine
-            .find_decl("table")
-            .and_then(|table_decl| {
-                let table_decl = table_decl.ok_or_else(|| ShellError::GenericError {
-                    error: "`table` decl is empty".to_owned(),
-                    msg: "`table` decl is empty".to_owned(),
-                    span: None,
-                    help: None,
-                    inner: vec![],
+        let result = self.context.engine.find_decl("table").and_then(
+            #[allow(clippy::result_large_err)]
+            |table_decl| {
+                let table_decl = table_decl.ok_or_else(|| {
+                    ShellError::Generic(GenericError::new(
+                        "`table` decl is empty",
+                        "`table` decl is empty",
+                        Span::unknown(),
+                    ))
                 })?;
                 let as_table = self.context.engine.call_decl(
                     table_decl,
@@ -71,7 +70,8 @@ impl SkimItem for NuItem {
                 )?;
                 let as_table_text = as_table.collect_string("\n", &self.context.nu_config)?;
                 Ok(as_table_text)
-            });
+            },
+        );
         match result {
             Ok(text) => ItemPreview::AnsiText(text),
             Err(err) => ItemPreview::AnsiText(err.to_string()),
