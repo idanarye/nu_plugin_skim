@@ -20,3 +20,5 @@ jobs:
           # for more options
           release-type: rust
           target-branch: main
+          bump-minor-pre-major: true
+          bump-patch-for-minor-pre-major: true
