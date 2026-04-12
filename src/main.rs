@@ -126,11 +126,11 @@ impl PluginCommand for Sk {
                 None
             }
             PipelineData::Value(_, _) | PipelineData::ListStream(_, _) => {
-                let (sender, receiver) = unbounded::<Arc<dyn SkimItem>>();
+                let (sender, receiver) = unbounded::<Vec<Arc<dyn SkimItem>>>();
                 std::thread::spawn(move || {
-                    for (index, entry) in input.into_iter().enumerate() {
+                    for entry in input {
                         if sender
-                            .send(Arc::new(NuItem::new(index, command_context.clone(), entry)))
+                            .send(vec![Arc::new(NuItem::new(command_context.clone(), entry))])
                             .is_err()
                         {
                             // Assuming the receiver was closed because the user picked an item
@@ -144,18 +144,17 @@ impl PluginCommand for Sk {
                 let Some(lines) = byte_stream.lines() else {
                     return Ok(PipelineData::empty());
                 };
-                let (sender, receiver) = unbounded::<Arc<dyn SkimItem>>();
+                let (sender, receiver) = unbounded::<Vec<Arc<dyn SkimItem>>>();
                 std::thread::spawn(move || {
-                    for (index, line) in lines.enumerate() {
+                    for line in lines {
                         if sender
-                            .send(Arc::new(NuItem::new(
-                                index,
+                            .send(vec![Arc::new(NuItem::new(
                                 command_context.clone(),
                                 match line {
                                     Ok(text) => Value::string(text, span),
                                     Err(err) => Value::error(err, span),
                                 },
-                            )))
+                            ))])
                             .is_err()
                         {
                             // Assuming the receiver was closed because the user picked an item
@@ -168,7 +167,7 @@ impl PluginCommand for Sk {
         };
 
         let _foreground = engine.enter_foreground()?;
-        let option_expect_is_empty = skim_options.expect.is_empty();
+        let option_expect_is_empty = true; // skim_options.expect.is_empty();
         let option_multi = skim_options.multi;
         let skim_output = Skim::run_with(skim_options, receiver).unwrap();
 

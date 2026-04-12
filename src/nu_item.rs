@@ -7,14 +7,13 @@ use skim::prelude::*;
 use crate::command_context::CommandContext;
 
 pub struct NuItem {
-    pub index: usize,
     pub context: Arc<CommandContext>,
     pub value: Value,
     pub display: Line<'static>,
 }
 
 impl NuItem {
-    pub fn new(index: usize, context: Arc<CommandContext>, value: Value) -> Self {
+    pub fn new(context: Arc<CommandContext>, value: Value) -> Self {
         let display = Line::from(
             context
                 .format
@@ -22,7 +21,6 @@ impl NuItem {
                 .to_expanded_string(", ", &context.nu_config),
         );
         Self {
-            index,
             context,
             value,
             display,
@@ -76,13 +74,5 @@ impl SkimItem for NuItem {
             Ok(text) => ItemPreview::AnsiText(text),
             Err(err) => ItemPreview::AnsiText(err.to_string()),
         }
-    }
-
-    fn get_index(&self) -> usize {
-        self.index
-    }
-
-    fn set_index(&mut self, index: usize) {
-        self.index = index;
     }
 }

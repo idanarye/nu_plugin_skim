@@ -18,8 +18,8 @@ impl CommandCollector for NuCommandCollector {
         cmd: &str, // not really the command - actually the query string
         components_to_stop: std::sync::Arc<std::sync::atomic::AtomicUsize>,
     ) -> (skim::SkimItemReceiver, skim::prelude::Sender<i32>) {
-        let (tx, rx) = unbounded::<Arc<dyn SkimItem>>();
-        let (tx_interrupt, mut rx_interrupt) = unbounded();
+        let (tx, rx) = unbounded::<Vec<Arc<dyn SkimItem>>>();
+        let (tx_interrupt, rx_interrupt) = unbounded();
         let context = self.context.clone();
         let closure = self.closure.clone();
         let cmd = Shlex::new(cmd)
@@ -38,21 +38,19 @@ impl CommandCollector for NuCommandCollector {
                 Ok(PipelineData::ByteStream(stream, _)) => {
                     let span = stream.span();
                     if let Some(lines) = stream.lines() {
-                        for (index, line) in lines.enumerate() {
+                        for line in lines {
                             if rx_interrupt.try_recv().is_ok() {
                                 break;
                             }
                             let send_result = match line {
-                                Ok(line) => tx.send(Arc::new(NuItem::new(
-                                    index,
+                                Ok(line) => tx.send(vec![Arc::new(NuItem::new(
                                     context.clone(),
                                     Value::string(line, span),
-                                ))),
-                                Err(err) => tx.send(Arc::new(NuItem::new(
-                                    index,
+                                ))]),
+                                Err(err) => tx.send(vec![Arc::new(NuItem::new(
                                     context.clone(),
                                     Value::error(err, span),
-                                ))),
+                                ))]),
                             };
                             if send_result.is_err() {
                                 break;
@@ -61,23 +59,22 @@ impl CommandCollector for NuCommandCollector {
                     }
                 }
                 Ok(stream) => {
-                    for (index, value) in stream.into_iter().enumerate() {
+                    for value in stream {
                         if rx_interrupt.try_recv().is_ok() {
                             break;
                         }
                         let send_result =
-                            tx.send(Arc::new(NuItem::new(index, context.clone(), value)));
+                            tx.send(vec![Arc::new(NuItem::new(context.clone(), value))]);
                         if send_result.is_err() {
                             break;
                         }
                     }
                 }
                 Err(err) => {
-                    let _ = tx.send(Arc::new(NuItem::new(
-                        0,
+                    let _ = tx.send(vec![Arc::new(NuItem::new(
                         context.clone(),
                         Value::error(err, Span::unknown()),
-                    )));
+                    ))]);
                 }
             }
 

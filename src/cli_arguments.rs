@@ -156,11 +156,10 @@ impl CliArguments {
                 .get_flag::<String>("algo")?
                 .as_deref()
                 .map(|flag| match flag {
-                    "skim_v1" => Ok(FuzzyAlgorithm::SkimV1),
                     "skim_v2" => Ok(FuzzyAlgorithm::SkimV2),
                     "clangd" => Ok(FuzzyAlgorithm::Clangd),
                     _ => Err(ShellError::InvalidValue {
-                        valid: "[skim_v1|skim_v2|clangd]".to_owned(),
+                        valid: "[skim_v2|clangd]".to_owned(),
                         actual: flag.to_owned(),
                         span: call
                             .get_flag_value("algo")
@@ -376,7 +375,7 @@ impl CliArguments {
             .named(
                 "algo",
                 SyntaxShape::String,
-                "Fuzzy matching algorithm: [skim_v1|skim_v2|clangd] (default: skim_v2)",
+                "Fuzzy matching algorithm: [skim_v2|clangd] (default: skim_v2)",
                 None,
             )
             .named(
@@ -487,125 +486,61 @@ impl CliArguments {
             no_clear_if_empty,
         } = self;
 
-        let default_options = SkimOptions::default();
+        // I'd really prefer to use the construct syntax, but Rust won't let me (even with the
+        // spread operator) because some fields are private.
+        let mut result = SkimOptions::default();
 
-        SkimOptions {
-            bind: bind.clone(),
-            keymap: {
-                let mut keymap = KeyMap::default();
-                keymap.add_keymaps(bind.iter().map(String::as_str));
-                keymap
-            },
-            multi: *multi,
-            no_multi: !*multi,
-            prompt: prompt.as_deref().unwrap_or_default().to_owned(),
-            cmd_prompt: cmd_prompt.as_deref().unwrap_or_default().to_owned(),
-            expect: Default::default(), // because its deprecated
-            tac: *tac,
-            no_sort: *nosort,
-            tiebreak: tiebreak.clone(),
-            exact: *exact,
-            cmd: Some("ls".to_owned()),
-            interactive: *interactive,
-            query: query.clone(),
-            cmd_query: cmd_query.clone(),
-            regex: *regex,
-            color: color.clone(),
-            margin: margin.as_deref().unwrap_or("0,0,0,0").to_owned(),
-            no_height: *no_height,
-            no_clear: *no_clear,
-            no_clear_start: *no_clear_start,
-            min_height: min_height.as_deref().unwrap_or("10").to_owned(),
-            height: height.as_deref().unwrap_or("100%").to_owned(),
-            preview_window: preview_window
-                .as_deref()
-                .map(PreviewLayout::from)
-                .unwrap_or_default(),
-            reverse: *reverse,
-            tabstop: tabstop.unwrap_or(8),
-            no_hscroll: *no_hscroll,
-            no_mouse: *no_mouse,
-            inline_info: *inline_info,
-            layout: if *reverse {
-                TuiLayout::Reverse
-            } else {
-                layout.unwrap_or_default()
-            }
-            .to_owned(),
-            algorithm: *algorithm,
-            case: *case,
-            keep_right: *keep_right,
-            skip_to_pattern: skip_to_pattern.clone(),
-            select_1: *select_1,
-            exit_0: *exit_0,
-            sync: *sync,
-            selector: selector.clone(),
-            no_clear_if_empty: *no_clear_if_empty,
-
-            // Use these instead of Default::default so that when they add new options the compiler
-            // will point them out.
-
-            // These are options that should not be implemented because it works differently in
-            // Nushell
-            preview: default_options.preview,
-            pre_select_n: default_options.pre_select_n,
-            pre_select_pat: default_options.pre_select_pat,
-            pre_select_items: default_options.pre_select_items,
-            pre_select_file: default_options.pre_select_file,
-            cmd_collector: default_options.cmd_collector,
-            shell: default_options.shell,
-            nth: default_options.nth,
-            delimiter: default_options.delimiter,
-            read0: default_options.read0,
-            print0: default_options.print0,
-
-            // These options still need to be considered
-            min_query_length: default_options.min_query_length,
-            with_nth: default_options.with_nth,
-            replstr: default_options.replstr,
-            show_cmd_error: default_options.show_cmd_error,
-            ansi: default_options.ansi,
-            info: default_options.info,
-            no_info: default_options.no_info,
-            header: default_options.header,
-            header_lines: default_options.header_lines,
-            history_file: default_options.history_file,
-            history_size: default_options.history_size,
-            cmd_history_file: default_options.cmd_history_file,
-            cmd_history_size: default_options.cmd_history_size,
-            print_query: default_options.print_query,
-            print_cmd: default_options.print_cmd,
-            print_score: default_options.print_score,
-            filter: default_options.filter,
-            tmux: default_options.tmux,
-            extended: default_options.extended,
-            literal: default_options.literal,
-            cycle: default_options.cycle,
-            hscroll_off: default_options.hscroll_off,
-            filepath_word: default_options.filepath_word,
-            jump_labels: default_options.jump_labels,
-            border: default_options.border,
-            no_bold: default_options.no_bold,
-            phony: default_options.phony,
-            query_history: default_options.query_history,
-            cmd_history: default_options.cmd_history,
-            preview_fn: default_options.preview_fn,
-
-            // Also these, which were added at version 1.0.0 or later:
-            normalize: default_options.normalize,
-            split_match: default_options.split_match,
-            disabled: default_options.disabled,
-            selector_icon: default_options.selector_icon,
-            multi_select_icon: default_options.multi_select_icon,
-            wrap_items: default_options.wrap_items,
-            print_header: default_options.print_header,
-            no_strip_ansi: default_options.no_strip_ansi,
-            shell_bindings: default_options.shell_bindings,
-            man: default_options.man,
-            listen: default_options.listen,
-            remote: default_options.remote,
-            log_file: default_options.log_file,
+        result.bind = bind.clone();
+        result.keymap = {
+            let mut keymap = KeyMap::default();
+            keymap.add_keymaps(bind.iter().map(String::as_str));
+            keymap
+        };
+        result.multi = *multi;
+        result.no_multi = !*multi;
+        result.prompt = prompt.as_deref().unwrap_or_default().to_owned();
+        result.cmd_prompt = cmd_prompt.as_deref().unwrap_or_default().to_owned();
+        result.tac = *tac;
+        result.no_sort = *nosort;
+        result.tiebreak = tiebreak.clone();
+        result.exact = *exact;
+        result.cmd = Some("ls".to_owned());
+        result.interactive = *interactive;
+        result.query = query.clone();
+        result.cmd_query = cmd_query.clone();
+        result.regex = *regex;
+        result.color = color.clone();
+        result.margin = margin.as_deref().unwrap_or("0,0,0,0").to_owned();
+        result.no_height = *no_height;
+        result.no_clear = *no_clear;
+        result.no_clear_start = *no_clear_start;
+        result.min_height = min_height.as_deref().unwrap_or("10").to_owned();
+        result.height = height.as_deref().unwrap_or("100%").to_owned();
+        result.preview_window = preview_window
+            .as_deref()
+            .map(PreviewLayout::from)
+            .unwrap_or_default();
+        result.reverse = *reverse;
+        result.tabstop = tabstop.unwrap_or(8);
+        result.no_hscroll = *no_hscroll;
+        result.no_mouse = *no_mouse;
+        result.inline_info = *inline_info;
+        result.layout = if *reverse {
+            TuiLayout::Reverse
+        } else {
+            layout.unwrap_or_default()
         }
+        .to_owned();
+        result.algorithm = *algorithm;
+        result.case = *case;
+        result.keep_right = *keep_right;
+        result.skip_to_pattern = skip_to_pattern.clone();
+        result.select_1 = *select_1;
+        result.exit_0 = *exit_0;
+        result.sync = *sync;
+        result.selector = selector.clone();
+        result.no_clear_if_empty = *no_clear_if_empty;
+        result
     }
 }
 
@@ -772,7 +707,6 @@ impl EnvDefaults {
                     "algo" => {
                         if let Some(v) = set_string(val_opt, &mut it) {
                             out.algorithm = match v.as_str() {
-                                "skim_v1" => Some(FuzzyAlgorithm::SkimV1),
                                 "skim_v2" => Some(FuzzyAlgorithm::SkimV2),
                                 "clangd" => Some(FuzzyAlgorithm::Clangd),
                                 _ => None,
