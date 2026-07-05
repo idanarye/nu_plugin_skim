@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.29.0](https://github.com/idanarye/nu_plugin_skim/compare/v0.28.0...v0.29.0) (2026-07-05)
+
+
+### Features
+
+* Support cell-path for `--format` and `--preview` ([794879d](https://github.com/idanarye/nu_plugin_skim/commit/794879d19c93f3813efff9e90db7ae042b3e2294))
+* Upgrade Nu version to 0.114 ([096f487](https://github.com/idanarye/nu_plugin_skim/commit/096f487bf94229e2cefc0998fc471f987575c59b))
+
 ## [0.28.0](https://github.com/idanarye/nu_plugin_skim/compare/v0.27.0...v0.28.0) (2026-05-30)
 
 
