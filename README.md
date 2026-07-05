@@ -76,13 +76,13 @@ nu_plugin_skim aims to repliacte skim's sytnax, but there are some differences t
   list<int> (stream)
   ```
 
-- `--format` - this is a flag that the regular skim does not have. It receives a Nushell closure, and pipes the items through that closure before showing them as user selectable rows.
+- `--format` - this is a flag that the regular skim does not have. It receives a Nushell closure, and pipes the items through that closure before showing them as user selectable rows. It can also receive a cell-path.
 
   If the closure returns a complex Nushell data type, it'll be formatted in a notation similar to [Nushell's `debug` command](http://www.nushell.sh/commands/docs/debug.html)
 
   Note that in skim one would use `--with-nth` for a similar purpose - but the syntax and usage are different enough to warren a different name.
 
-- `--preview` - unlike the regular skim, where `--preview` accepts a string, here `--preview` accepts a Nushell closure. The item under the cursor will get piped into the closure and the result will be displayed inside the preview window.
+- `--preview` - unlike the regular skim, where `--preview` accepts a string, here `--preview` accepts a Nushell closure. The item under the cursor will get piped into the closure and the result will be displayed inside the preview window. It can also receive a cell-path.
 
   If the closure returns a complex Nushell data type, it'll be formatted into a table.
 

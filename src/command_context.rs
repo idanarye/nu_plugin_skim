@@ -1,6 +1,8 @@
 use std::{borrow::Cow, sync::Arc};
 
 use nu_plugin::EngineInterface;
+use nu_protocol::ast::CellPath;
+use nu_protocol::{FromValue, IntoValue};
 use nu_protocol::{
     IntoSpanned, LabeledError, PipelineData, ShellError, Spanned, Value, engine::Closure,
 };
@@ -27,6 +29,26 @@ impl CommandContext {
 pub enum MapperFlag {
     None,
     Closure(Spanned<Closure>),
+    CellPath(Spanned<CellPath>),
+}
+
+impl FromValue for MapperFlag {
+    fn from_value(v: Value) -> Result<Self, ShellError> {
+        match v {
+            Value::Closure {
+                val, internal_span, ..
+            } => Ok(Self::Closure((*val).into_spanned(internal_span))),
+            Value::CellPath {
+                val, internal_span, ..
+            } => Ok(Self::CellPath(val.into_spanned(internal_span))),
+            _ => Err(ShellError::CantConvert {
+                to_type: "closure/cell-path".to_owned(),
+                from_type: v.get_type().to_string(),
+                span: v.span(),
+                help: None,
+            }),
+        }
+    }
 }
 
 impl TryFrom<Value> for MapperFlag {
@@ -78,6 +100,12 @@ impl MapperFlag {
                     Err(err) => Value::error(err, closure.span),
                 },
             ),
+            MapperFlag::CellPath(cell_path) => {
+                match value.follow_cell_path(&cell_path.item.members) {
+                    Ok(cell_value) => cell_value,
+                    Err(err) => Cow::Owned(err.into_value(cell_path.span)),
+                }
+            }
         }
     }
 }

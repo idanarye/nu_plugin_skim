@@ -17,6 +17,8 @@ use nu_protocol::{
 use skim::prelude::*;
 use skim::tui::event::Action;
 
+use self::command_context::MapperFlag;
+
 pub struct SkimPlugin;
 
 impl Plugin for SkimPlugin {
@@ -52,13 +54,19 @@ impl PluginCommand for Sk {
                 .filter()
                 .named(
                     "format",
-                    SyntaxShape::Closure(Some(vec![])),
+                    SyntaxShape::OneOf([
+                        SyntaxShape::Closure(Some(vec![])),
+                        SyntaxShape::CellPath,
+                    ].into()),
                     "Modify the string to display",
                     Some('f'),
                 )
                 .named(
                     "preview",
-                    SyntaxShape::Closure(Some(vec![])),
+                    SyntaxShape::OneOf([
+                        SyntaxShape::Closure(Some(vec![])),
+                        SyntaxShape::CellPath,
+                    ].into()),
                     "Generate a preview",
                     Some('p'),
                 )
@@ -91,12 +99,10 @@ impl PluginCommand for Sk {
         let mut skim_options = cli_arguments.to_skim_options();
 
         let mut command_context = CommandContext::new(engine)?;
-        if let Some(format) = call.get_flag_value("format") {
-            command_context.format = format.try_into()?;
-        }
+        command_context.format = call.get_flag("format")?.unwrap_or(MapperFlag::None);
 
-        if let Some(preview) = call.get_flag_value("preview") {
-            command_context.preview = preview.try_into()?;
+        if let Some(preview) = call.get_flag("preview")? {
+            command_context.preview = preview;
             skim_options.preview = Some("".to_owned());
         }
 
