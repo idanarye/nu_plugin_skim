@@ -233,7 +233,7 @@ impl CliArguments {
         signature
             .named(
                 "bind",
-                SyntaxShape::Record(Vec::default()),
+                SyntaxShape::Record(Default::default()),
                 "Custom key bindings. A record where the keys arae keymaps and the values are actions",
                 None,
             )
@@ -808,11 +808,14 @@ fn value_enum_possibilities_string<T: ValueEnum>() -> String {
     result
 }
 
-fn parse_value_enum_from_flag<T: ValueEnum>(flag: nu_protocol::Value) -> Result<T, ShellError> {
+fn parse_value_enum_from_flag<T: ValueEnum>(flag: nu_protocol::Value) -> Result<T, LabeledError> {
     let str_value = flag.as_str()?;
-    T::from_str(str_value, false).map_err(|_| ShellError::InvalidValue {
-        valid: format!("[{}]", value_enum_possibilities_string::<T>()),
-        actual: str_value.to_owned(),
-        span: flag.span(),
+    T::from_str(str_value, false).map_err(|_| {
+        ShellError::InvalidValue {
+            valid: format!("[{}]", value_enum_possibilities_string::<T>()),
+            actual: str_value.to_owned(),
+            span: flag.span(),
+        }
+        .into()
     })
 }
