@@ -60,9 +60,7 @@ impl CommandCollector for NuCommandCollector {
                 }
                 Ok(stream) => {
                     for value in stream {
-                        if rx_interrupt.try_recv().is_ok() {
-                            break;
-                        }
+
                         let send_result =
                             tx.send(vec![Arc::new(NuItem::new(context.clone(), value))]);
                         if send_result.is_err() {
