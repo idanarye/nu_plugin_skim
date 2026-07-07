@@ -48,7 +48,10 @@ impl PluginCommand for Sk {
                         Type::Nothing,
                         Type::List(Type::Any.into()),
                     ]),
-                    Type::List(Type::Any.into()),
+                    Type::one_of([
+                        Type::List(Type::Any.into()),
+                        Type::Any,
+                    ]),
                 )
                 .category(Category::Filters)
                 .filter()
