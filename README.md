@@ -65,7 +65,7 @@ Of course, the result of the command can be piped into another command:
 
 ## Notable flags
 
-nu_plugin_skim aims to repliacte skim's sytnax, but there are some differences to better integrate with Nushell:
+nu_plugin_skim aims to replicate skim's sytnax, but there are some differences to better integrate with Nushell:
 
 - `--multi` / `-m` - this flag works exactly the same as in the regular skim, but unlike the regular skim that always returns text - here `sk` returns structured Nushell data, and this flag changes the type of that data. Without it, the chosen item is returned as is. With it, it gets returned as a list (even if the user only chooses a single item)
 
