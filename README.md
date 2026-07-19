@@ -1,6 +1,6 @@
 # nu_plugin_skim
 
-This is a [Nushell](https://nushell.sh/) plugin that adds integrates the [skim](https://github.com/lotabout/skim) fuzzy finder.
+This is a [Nushell](https://nushell.sh/) plugin that integrates the [skim](https://github.com/lotabout/skim) fuzzy finder.
 
 The regular `sk` executable filters lines of text, but the `sk` command added by this plugin can filter Nushell's structured data.
 
