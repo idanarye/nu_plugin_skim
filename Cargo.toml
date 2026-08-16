@@ -16,11 +16,11 @@ license = "MIT"
 # for local development, you can use a path dependency
 # nu-plugin = { path = "../nushell/crates/nu-plugin" }
 # nu-protocol = { path = "../nushell/crates/nu-protocol", features = ["plugin"] }
-nu-plugin = "0.114"
-nu-protocol = { version = "0.114", features = ["plugin"] }
+nu-plugin = "0.115"
+nu-protocol = { version = "0.115", features = ["plugin"] }
 #nu-table = "0.99"
 skim = { version = "4", default-features = false, features = ["cli"] }
-nu-color-config = "0.114"
+nu-color-config = "0.115"
 clap = "4"
 shlex = "1"
 ratatui = "0.30"
