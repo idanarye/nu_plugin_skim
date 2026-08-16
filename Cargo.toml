@@ -22,7 +22,7 @@ nu-protocol = { version = "0.115", features = ["plugin"] }
 skim = { version = "4", default-features = false, features = ["cli"] }
 nu-color-config = "0.115"
 clap = "4"
-shlex = "1"
+shlex = "2"
 ratatui = "0.30"
 
 # The profile that 'dist' will build with
