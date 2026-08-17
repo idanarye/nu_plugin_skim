@@ -2063,6 +2063,7 @@ dependencies = [
 name = "nu_plugin_skim"
 version = "0.29.1"
 dependencies = [
+ "ansi-to-tui",
  "clap",
  "nu-color-config",
  "nu-plugin",
