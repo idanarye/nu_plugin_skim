@@ -39,7 +39,7 @@ impl CommandCollector for NuCommandCollector {
                     let span = stream.span();
                     if let Some(lines) = stream.lines() {
                         for line in lines {
-                            if rx_interrupt.try_recv().is_ok() {
+                            if let Ok(Some(_)) = rx_interrupt.try_recv() {
                                 break;
                             }
                             let send_result = match line {
@@ -60,7 +60,9 @@ impl CommandCollector for NuCommandCollector {
                 }
                 Ok(stream) => {
                     for value in stream {
-
+                        if let Ok(Some(_)) = rx_interrupt.try_recv() {
+                            break;
+                        }
                         let send_result =
                             tx.send(vec![Arc::new(NuItem::new(context.clone(), value))]);
                         if send_result.is_err() {
