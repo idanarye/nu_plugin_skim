@@ -1,6 +1,6 @@
 [package]
 name = "nu_plugin_skim"
-version = "0.29.1"
+version = "0.30.0"
 authors = ["Idan Arye <IdanArye@gmail.com>"]
 edition = "2024"
 description = "An `sk` command that can handle Nushell's structured data"
@@ -24,6 +24,7 @@ nu-color-config = "0.115"
 clap = "4"
 shlex = "2"
 ratatui = "0.30"
+ansi-to-tui = "8"
 
 # The profile that 'dist' will build with
 [profile.dist]
