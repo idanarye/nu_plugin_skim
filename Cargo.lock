@@ -2066,7 +2066,7 @@ dependencies = [
 
 [[package]]
 name = "nu_plugin_skim"
-version = "0.31.0"
+version = "0.32.0"
 dependencies = [
  "ansi-to-tui",
  "clap",
